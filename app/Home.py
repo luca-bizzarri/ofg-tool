@@ -40,6 +40,32 @@ def read_table(uploaded_file):
     return pd.read_csv(uploaded_file)
 
 
+def check_password():
+    """Gate di accesso con password.
+
+    Attivo SOLO se 'APP_PASSWORD' e' impostata nei Secrets (online). In locale,
+    senza secret, l'app resta libera (comodo per sviluppo). Ritorna True se l'accesso
+    e' consentito.
+    """
+    try:
+        expected = st.secrets.get("APP_PASSWORD", "")
+    except Exception:
+        expected = ""
+    if not expected:
+        return True  # nessuna password configurata -> nessun gate
+    if st.session_state.get("auth_ok"):
+        return True
+    st.markdown("## 🔒 OFG Tool — Accesso riservato")
+    pwd = st.text_input("Password", type="password", key="pwd_input")
+    if st.button("Entra", type="primary"):
+        if pwd == expected:
+            st.session_state["auth_ok"] = True
+            st.rerun()
+        else:
+            st.error("Password errata.")
+    return False
+
+
 def char_counter(text, soft_limit=800):
     """Mostra un contatore di caratteri sotto una casella di testo.
 
@@ -90,6 +116,10 @@ st.markdown("""
     .stButton>button[kind="primary"]:hover {background-color: #ffd400; color: #111; border-color: #ffd400;}
     </style>
 """, unsafe_allow_html=True)
+
+# --- Gate password (attivo solo online se APP_PASSWORD e' nei Secrets) ---
+if not check_password():
+    st.stop()
 
 # ==========================================
 # SIDEBAR (CON PULIZIA STATO AL CAMBIO CLIENTE)
