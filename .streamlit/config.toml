@@ -1,0 +1,9 @@
+[theme]
+# Brand OFG: nero / bianco / giallo (#ffff00).
+# primaryColor scuro = bottoni/elementi interattivi leggibili (il giallo lo usiamo
+# come accento via CSS, non come colore dei bottoni dove il testo bianco sparirebbe).
+primaryColor = "#111111"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f5f5f5"
+textColor = "#111111"
+font = "sans serif"

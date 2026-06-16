@@ -25,3 +25,8 @@ Thumbs.db
 /tmp/
 output/
 uploads/
+
+# === File di esempio / test generati in locale (non versionare) ===
+*_esempio.*
+_*test.py
+_qa_recheck.py
