@@ -1,0 +1,27 @@
+# === CHIAVI E SEGRETI (non devono MAI finire su GitHub) ===
+.env
+.env.*
+!.env.example
+*.key
+.streamlit/secrets.toml
+
+# === Python ===
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# === Sistema / editor ===
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# === Dati temporanei / output ===
+*.tmp
+/tmp/
+output/
+uploads/

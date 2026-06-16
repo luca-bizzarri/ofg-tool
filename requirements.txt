@@ -1,0 +1,15 @@
+streamlit
+langchain
+langchain-openai
+langchain-qdrant
+qdrant-client
+python-dotenv
+langchain-text-splitters
+pandas
+openpyxl
+requests
+PyPDF2
+python-docx
+matplotlib
+fpdf2
+trafilatura
