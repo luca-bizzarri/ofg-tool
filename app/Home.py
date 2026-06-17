@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import time
+import base64
 
 import streamlit as st
 import pandas as pd
@@ -431,5 +432,7 @@ if area == "🖼️ Slide":
         st.success(f"✅ Generate {n} slide. Copia il markdown qui sotto e incollalo nello Slide Builder (pannello sorgente, oppure Importa → Markdown).")
         st.code(md, language="markdown")
         st.download_button("⬇️ Scarica .md", data=md, file_name="presentazione-ofg.md", mime="text/markdown")
-        st.markdown("[↗️ Apri lo Slide Builder](https://luca-bizzarri.github.io/ofg-slide-builder/)")
-        st.caption("Le foto si aggiungono direttamente nello Slide Builder (galleria → slide).")
+        _enc = base64.urlsafe_b64encode(md.encode("utf-8")).decode("ascii")
+        _link = "https://luca-bizzarri.github.io/ofg-slide-builder/#md=" + _enc
+        st.link_button("🚀 Apri il deck nello Slide Builder (slide già caricate)", _link, type="primary", use_container_width=True)
+        st.caption("Il link apre lo Slide Builder con le slide GIÀ dentro — niente copia-incolla. Le foto si aggiungono lì (galleria → slide). Per deck molto lunghi, in alternativa, copia il markdown qui sopra.")
