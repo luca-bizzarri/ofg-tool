@@ -57,6 +57,15 @@ def telos_text(telos: dict) -> str:
             parts.append("- %s: %s" % (label, val))
     return "\n".join(parts)
 
+
+def telos_for(client_id: str) -> str:
+    """Comodita': testo TELOS del cliente (vuoto se assente). Da usare nei
+    prompt di tutti gli agenti per ancorare l'output all'identita' di brand."""
+    try:
+        return telos_text(get_profile(client_id).get("telos"))
+    except Exception:
+        return ""
+
 # Valori di riferimento (generici, validi per ogni cliente) usati nelle UI.
 CONTENT_TYPES = ["Product", "Engage", "Education", "Brand", "Event", "Holidays"]
 POST_TYPES = ["post", "carousel", "reel", "stories"]

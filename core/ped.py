@@ -54,6 +54,8 @@ def generate_content(client_id, rubrica, content_type, obiettivo, piattaforme, p
     """Genera UN contenuto strutturato. Ritorna testo (markdown) pronto da rivedere."""
     context, fonti = _client_context(client_id, rubrica.get("nome", ""))
     blacklist = rag.extract_constraints(client_id)
+    _telos = clients.telos_for(client_id)
+    brand_block = ("## IDENTITA' DI BRAND (RISPETTALA SEMPRE):\n" + _telos + "\n\n") if _telos else ""
     tipologia = (content_type or "post").lower()
 
     # Istruzioni di output specifiche per tipologia
@@ -77,6 +79,7 @@ def generate_content(client_id, rubrica, content_type, obiettivo, piattaforme, p
     prompt = (
         f"Sei un Content & Creative Strategist senior. Crea il contenuto richiesto, coerente al 100% con "
         f"il tono di voce e i dati del cliente.\n\n"
+        f"{brand_block}"
         f"## CONTESTO CLIENTE (BASE ASSOLUTA - usa SOLO queste info, non inventare):\n{context or 'Nessun contesto.'}\n\n"
         f"## RUBRICA: {rubrica.get('nome','(libera)')}\n"
         f"Descrizione rubrica: {rubrica.get('descrizione','-')}\n"
@@ -115,6 +118,8 @@ def generate_calendar(client_id, rubriche_attive, mese, anno, n_contenuti, chann
     """
     context, fonti = _client_context(client_id)
     blacklist = rag.extract_constraints(client_id)
+    _telos = clients.telos_for(client_id)
+    brand_block = ("## IDENTITA' DI BRAND (RISPETTALA SEMPRE):\n" + _telos + "\n\n") if _telos else ""
     rub_desc = "\n".join(
         f"- {r.get('nome')}: {r.get('descrizione','')} | taglio: {r.get('taglio','')} | tipologia tipica: {r.get('tipologia','')}"
         for r in rubriche_attive
@@ -130,6 +135,7 @@ def generate_calendar(client_id, rubriche_attive, mese, anno, n_contenuti, chann
         prompt = (
             f"Sei un Content Strategist. Genera ESATTAMENTE {q} contenuti per il PIANO EDITORIALE di "
             f"{mese} {anno}, in JSON STRICT (array).\n\n"
+            f"{brand_block}"
             f"## CONTESTO CLIENTE (base assoluta, non inventare):\n{context or 'Nessun contesto.'}\n\n"
             f"## RUBRICHE ATTIVE (usa SOLO queste, a rotazione):\n{rub_desc}\n\n"
             f"## CANALE: {channel}\n"

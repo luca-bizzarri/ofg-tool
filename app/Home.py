@@ -70,6 +70,21 @@ def extract_uploaded(uploaded_file) -> str:
         return ""
 
 
+def render_telos_editor(client_id, profile):
+    """Editor dell'IDENTITÀ DI BRAND (TELOS) del cliente. È il contesto
+    'sempre presente' usato da TUTTI gli agenti (Ideazione, PED, ADV, Slide):
+    viene messo in cima a ogni prompt. Salva nel profilo del cliente."""
+    telos = clients.empty_telos()
+    telos.update(profile.get("telos") or {})
+    vals = {}
+    for _k, _label in clients.TELOS_FIELDS:
+        vals[_k] = st.text_area(_label, value=telos.get(_k, ""), height=70, key=f"telos_{_k}")
+    if st.button("💾 Salva identità di brand", key="save_telos"):
+        profile["telos"] = vals
+        clients.save_profile(client_id, profile)
+        st.success("Identità di brand salvata: la useranno tutti gli agenti.")
+
+
 if not check_password():
     st.stop()
 
@@ -201,6 +216,11 @@ elif area == "🗂️ Scheda & Apprendimento":
         clients.save_profile(client_id, profile)
         st.success("Salvato.")
         st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🎯 Identità di brand (TELOS) — la usano TUTTI gli agenti")
+    st.caption("La bussola del cliente (tono, do/don't, claim vietati): viene messa in cima a OGNI generazione — PED, ADV, Ideazione e Slide. Compila almeno missione, tono e claim vietati.")
+    render_telos_editor(client_id, profile)
 
     st.markdown("---")
     st.markdown("### 🗂️ Rubriche del cliente")

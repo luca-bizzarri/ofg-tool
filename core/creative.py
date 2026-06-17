@@ -3,6 +3,16 @@ Aree IDEAZIONE e CAMPAGNE ADV di OFG Tool.
 Generazione creativa ancorata alla scheda cliente (tono di voce, brand, regole).
 """
 from core import rag_engine as rag
+from core import clients
+
+
+def _brand_block(client_id):
+    """Blocco IDENTITA' DI BRAND (TELOS) da anteporre ai prompt: ancora
+    deterministica sempre presente, oltre al contesto recuperato da Qdrant."""
+    telos = clients.telos_for(client_id)
+    return ("## IDENTITA' DI BRAND DEL CLIENTE (RISPETTALA SEMPRE):\n"
+            + telos + "\n\n") if telos else ""
+
 
 IDEA_TYPES = [
     "Idee per Reel", "Idee per Caroselli", "Idee per Post statici", "Idee per Stories",
@@ -22,6 +32,7 @@ def generate_ideazione(client_id, tipologia_idee, obiettivo, piattaforme, note="
     blacklist = rag.extract_constraints(client_id)
     prompt = (
         f"Sei un Creative & Content Strategist senior. Proponi IDEE creative per: {tipologia_idee}.\n\n"
+        f"{_brand_block(client_id)}"
         f"## CONTESTO CLIENTE (base assoluta, non inventare):\n{context or 'Nessun contesto.'}\n\n"
         f"## BRIEF: Obiettivo={obiettivo} | Piattaforme={', '.join(piattaforme)} | Note={note or '-'}\n\n"
         f"## OUTPUT RICHIESTO (struttura obbligatoria):\n"
@@ -45,6 +56,7 @@ def generate_adv(client_id, nome_promo, obiettivo, timing, piattaforme, scontist
     )
     prompt = (
         f"Sei un Creative Strategist + Media Buyer senior. Sviluppa la campagna ADV.\n\n"
+        f"{_brand_block(client_id)}"
         f"## CONTESTO CLIENTE (base assoluta):\n{context or 'Nessun contesto.'}\n\n"
         f"## BRIEF CAMPAGNA:\n"
         f"Nome promo: {nome_promo or '-'} | Obiettivo: {obiettivo} | Timing: {timing or '-'}\n"
