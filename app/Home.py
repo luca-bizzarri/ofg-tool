@@ -613,54 +613,84 @@ elif task_type == "📊 Report ADS Performance":
         st.markdown(f'<div class="debug-box" style="max-height: 200px; overflow-y: auto; font-size: 0.75rem;">{context_preview[:500]}...</div>', unsafe_allow_html=True)
 
     if uploaded_report is not None:
-        if st.button("🚀 Genera Report PDF", type="primary", use_container_width=True):
-            with st.spinner("Analisi dati e generazione report in corso..."):
-                try:
-                    df_report = read_table(uploaded_report)
-                    df_report.columns = [col.strip().lower().replace(' ', '_') for col in df_report.columns]
-                    spend_col = next((c for c in df_report.columns if 'spes' in c or 'spend' in c or 'cost' in c or 'import' in c or 'invest' in c), None)
-                    impr_col = next((c for c in df_report.columns if 'impression' in c or 'impres' in c), None)
-                    click_col = next((c for c in df_report.columns if 'click' in c and 'ctr' not in c), None)
-                    ctr_col = next((c for c in df_report.columns if 'ctr' in c), None)
-                    cpa_col = next((c for c in df_report.columns if 'cpa' in c or 'cost_per' in c), None)
-                    roas_col = next((c for c in df_report.columns if 'roas' in c or 'return' in c), None)
-                    conv_col = next((c for c in df_report.columns if 'conv' in c or 'conversion' in c or 'risultat' in c), None)
+        try:
+            df_report = read_table(uploaded_report)
+            df_report.columns = [str(col).strip().lower().replace(' ', '_') for col in df_report.columns]
+        except Exception as e:
+            st.error(f"❌ Impossibile leggere il file: {e}")
+            df_report = None
 
-                    # Conversione numerica robusta (gestisce "1.234,56", "EUR 10,50", "1,000")
-                    total_spend = reporting.col_sum(df_report, spend_col)
-                    total_impr = reporting.col_sum(df_report, impr_col)
-                    total_click = reporting.col_sum(df_report, click_col)
-                    total_conv = reporting.col_sum(df_report, conv_col)
-                    avg_ctr = (total_click / total_impr * 100) if total_impr > 0 else 0
-                    avg_cpa = (total_spend / total_conv) if total_conv > 0 else 0
-                    avg_roas = reporting.col_mean(df_report, roas_col)
+        if df_report is not None:
+            opts = ["(nessuna)"] + list(df_report.columns)
 
-                    _missing = [k for k, v in {"Spesa": spend_col, "Impressioni": impr_col, "Click": click_col, "Conversioni": conv_col}.items() if not v]
-                    if _missing:
-                        st.warning("⚠️ Colonne non riconosciute nel file (messe a 0): " + ", ".join(_missing) + ". Controlla le intestazioni del report.")
+            def _auto(keys, exclude=()):
+                return next((c for c in df_report.columns if any(k in c for k in keys) and not any(x in c for x in exclude)), None)
 
-                    csv_sample = df_report.head(20).to_string()
-                    ctx = rag.get_client_context(client_id, "ICP, obiettivi strategici, tono di voce, pain gain")
-                    metrics = [("Spesa Totale", f"EUR {total_spend:.2f}"), ("Impressioni", f"{total_impr:,.0f}"), ("Click Totali", f"{total_click:,.0f}"), ("CTR Medio", f"{avg_ctr:.2f}%"), ("Conversioni", f"{total_conv:,.0f}"), ("CPA Medio", f"EUR {avg_cpa:.2f}"), ("ROAS Medio", f"{avg_roas:.2f}x")]
-                    metriche_str = " | ".join(f"{k}: {v}" for k, v in metrics)
-                    prompt_analysis = reporting.build_standard_report_prompt("Report Performance ADS", client_id, date_range, ctx.get("context", ""), metriche_str, f"Obiettivo: {obiettivo_campagna}", csv_sample)
-                    ai_analysis = rag.llm.invoke(prompt_analysis).content
-                    fonti = ctx.get("metadata", {}).get("sources", [])
-                    pdf_bytes = reporting.build_standard_report_pdf("Report Performance ADS", client_id, date_range, metrics, ai_analysis, fonti)
+            _det = {
+                "spend": _auto(['spes', 'spend', 'cost', 'import', 'invest', 'budget']),
+                "impr": _auto(['impression', 'impres', 'copert']),
+                "click": _auto(['click', 'clic'], exclude=['ctr']),
+                "conv": _auto(['conv', 'risultat', 'acquist', 'lead', 'vendit']),
+                "roas": _auto(['roas', 'return', 'ritorno']),
+            }
 
-                    st.success("✅ Report generato con successo!")
-                    if fonti:
-                        st.caption("📚 Fonti di memoria usate: " + ", ".join(fonti[:8]))
-                    else:
-                        st.caption("📚 Nessuna memoria cliente trovata: report basato solo sui dati caricati.")
-                    st.markdown("### 📈 Anteprima Analisi")
-                    st.markdown(f'<div class="insight-box">{ai_analysis}</div>', unsafe_allow_html=True)
-                    slides_html = reporting.build_report_slides_html("Report Performance ADS", client_id, date_range, metrics, ai_analysis, fonti)
-                    st.download_button(label="🖥️ Scarica Slide (HTML)", data=slides_html, file_name=f"Slide_ADS_{client_id}_{date_range.replace(' ', '_')}.html", mime="text/html", type="primary", use_container_width=True)
-                    st.caption("Apri il file nel browser → naviga con le frecce. Per il PDF: Stampa (Ctrl/Cmd+P) → Salva come PDF, attivando 'Grafica di sfondo'.")
-                    st.download_button(label="📄 (alternativa) Scarica PDF documento", data=pdf_bytes, file_name=f"Report_ADS_{client_id}_{date_range.replace(' ', '_')}.pdf", mime="application/pdf")
-                except Exception as e:
-                    st.error(f"❌ Errore: {str(e)}")
+            def _idx(col):
+                return opts.index(col) if col in opts else 0
+
+            st.markdown("### 3. Colonne del file")
+            _need = not all(_det[k] for k in ['spend', 'impr', 'click'])
+            if _need:
+                st.warning("⚠️ Non ho riconosciuto tutte le colonne in automatico. Scegli qui sotto quelle giuste, altrimenti i valori usciranno a 0.")
+            with st.expander("🔧 Verifica/correggi la mappatura colonne", expanded=_need):
+                st.caption("Associa ogni metrica alla colonna del tuo file. Quelle riconosciute sono già pre-selezionate.")
+                mc1, mc2 = st.columns(2)
+                with mc1:
+                    spend_sel = st.selectbox("💶 Spesa", opts, index=_idx(_det['spend']), key="map_ads_spend")
+                    impr_sel = st.selectbox("👁️ Impressioni", opts, index=_idx(_det['impr']), key="map_ads_impr")
+                    click_sel = st.selectbox("🖱️ Click", opts, index=_idx(_det['click']), key="map_ads_click")
+                with mc2:
+                    conv_sel = st.selectbox("🎯 Conversioni", opts, index=_idx(_det['conv']), key="map_ads_conv")
+                    roas_sel = st.selectbox("📈 ROAS", opts, index=_idx(_det['roas']), key="map_ads_roas")
+
+            def _col(sel):
+                return None if sel == "(nessuna)" else sel
+
+            if st.button("🚀 Genera Report", type="primary", use_container_width=True):
+                with st.spinner("Analisi dati e generazione report in corso..."):
+                    try:
+                        total_spend = reporting.col_sum(df_report, _col(spend_sel))
+                        total_impr = reporting.col_sum(df_report, _col(impr_sel))
+                        total_click = reporting.col_sum(df_report, _col(click_sel))
+                        total_conv = reporting.col_sum(df_report, _col(conv_sel))
+                        avg_ctr = (total_click / total_impr * 100) if total_impr > 0 else 0
+                        avg_cpa = (total_spend / total_conv) if total_conv > 0 else 0
+                        avg_roas = reporting.col_mean(df_report, _col(roas_sel))
+
+                        if all(v == 0 for v in [total_spend, total_impr, total_click]):
+                            st.warning("⚠️ Le metriche principali risultano a 0: apri '🔧 Verifica/correggi la mappatura colonne' qui sopra e seleziona le colonne giuste del tuo file.")
+
+                        csv_sample = df_report.head(20).to_string()
+                        ctx = rag.get_client_context(client_id, "ICP, obiettivi strategici, tono di voce, pain gain")
+                        metrics = [("Spesa Totale", f"EUR {total_spend:.2f}"), ("Impressioni", f"{total_impr:,.0f}"), ("Click Totali", f"{total_click:,.0f}"), ("CTR Medio", f"{avg_ctr:.2f}%"), ("Conversioni", f"{total_conv:,.0f}"), ("CPA Medio", f"EUR {avg_cpa:.2f}"), ("ROAS Medio", f"{avg_roas:.2f}x")]
+                        metriche_str = " | ".join(f"{k}: {v}" for k, v in metrics)
+                        prompt_analysis = reporting.build_standard_report_prompt("Report Performance ADS", client_id, date_range, ctx.get("context", ""), metriche_str, f"Obiettivo: {obiettivo_campagna}", csv_sample)
+                        ai_analysis = rag.llm.invoke(prompt_analysis).content
+                        fonti = ctx.get("metadata", {}).get("sources", [])
+                        pdf_bytes = reporting.build_standard_report_pdf("Report Performance ADS", client_id, date_range, metrics, ai_analysis, fonti)
+
+                        st.success("✅ Report generato con successo!")
+                        if fonti:
+                            st.caption("📚 Fonti di memoria usate: " + ", ".join(fonti[:8]))
+                        else:
+                            st.caption("📚 Nessuna memoria cliente trovata: report basato solo sui dati caricati.")
+                        st.markdown("### 📈 Anteprima Analisi")
+                        st.markdown(f'<div class="insight-box">{ai_analysis}</div>', unsafe_allow_html=True)
+                        slides_html = reporting.build_report_slides_html("Report Performance ADS", client_id, date_range, metrics, ai_analysis, fonti)
+                        st.download_button(label="🖥️ Scarica Slide (HTML)", data=slides_html, file_name=f"Slide_ADS_{client_id}_{date_range.replace(' ', '_')}.html", mime="text/html", type="primary", use_container_width=True)
+                        st.caption("Apri il file nel browser → naviga con le frecce. Per il PDF: Stampa (Ctrl/Cmd+P) → Salva come PDF, attivando 'Grafica di sfondo'.")
+                        st.download_button(label="📄 (alternativa) Scarica PDF documento", data=pdf_bytes, file_name=f"Report_ADS_{client_id}_{date_range.replace(' ', '_')}.pdf", mime="application/pdf")
+                    except Exception as e:
+                        st.error(f"❌ Errore: {str(e)}")
 
 # ==========================================
 # AGENTE 4: REPORT SOCIAL
@@ -681,51 +711,83 @@ elif task_type == "📱 Report Social Organico":
         st.markdown(f'<div class="debug-box" style="max-height: 200px; overflow-y: auto; font-size: 0.75rem;">{context_preview[:500]}...</div>', unsafe_allow_html=True)
 
     if uploaded_social is not None:
-        if st.button("🚀 Genera Report Social PDF", type="primary", use_container_width=True):
-            with st.spinner("Analisi contenuti e generazione report..."):
-                try:
-                    df_social = read_table(uploaded_social)
-                    df_social.columns = [col.strip().lower().replace(' ', '_') for col in df_social.columns]
-                    likes_col = next((c for c in df_social.columns if 'like' in c or 'reaction' in c or 'mi piace' in c), None)
-                    comments_col = next((c for c in df_social.columns if 'comment' in c or 'commenti' in c), None)
-                    shares_col = next((c for c in df_social.columns if 'share' in c or 'condiv' in c), None)
-                    reach_col = next((c for c in df_social.columns if 'reach' in c or 'portata' in c or 'copert' in c), None)
-                    engagement_col = next((c for c in df_social.columns if 'engagement' in c or 'eng_rate' in c or 'interazion' in c), None)
+        try:
+            df_social = read_table(uploaded_social)
+            df_social.columns = [str(col).strip().lower().replace(' ', '_') for col in df_social.columns]
+        except Exception as e:
+            st.error(f"❌ Impossibile leggere il file: {e}")
+            df_social = None
 
-                    # Conversione numerica robusta (export reali con separatori/simboli)
-                    total_posts = len(df_social)
-                    total_likes = reporting.col_sum(df_social, likes_col)
-                    total_comments = reporting.col_sum(df_social, comments_col)
-                    total_shares = reporting.col_sum(df_social, shares_col)
-                    total_reach = reporting.col_sum(df_social, reach_col)
-                    avg_engagement = reporting.col_mean(df_social, engagement_col)
+        if df_social is not None:
+            opts = ["(nessuna)"] + list(df_social.columns)
 
-                    _missing = [k for k, v in {"Like": likes_col, "Commenti": comments_col, "Reach": reach_col, "Engagement": engagement_col}.items() if not v]
-                    if _missing:
-                        st.warning("⚠️ Colonne non riconosciute nel file (messe a 0): " + ", ".join(_missing) + ". Controlla le intestazioni del report.")
+            def _auto_s(keys, exclude=()):
+                return next((c for c in df_social.columns if any(k in c for k in keys) and not any(x in c for x in exclude)), None)
 
-                    social_sample = df_social.head(20).to_string()
-                    ctx = rag.get_client_context(client_id, "ICP, tono di voce, obiettivi social, pain gain")
-                    metrics_social = [("Post Totali", f"{total_posts}"), ("Like Totali", f"{total_likes:,.0f}"), ("Commenti", f"{total_comments:,.0f}"), ("Condivisioni", f"{total_shares:,.0f}"), ("Reach Totale", f"{total_reach:,.0f}"), ("Engagement Rate Medio", f"{avg_engagement:.2f}%")]
-                    metriche_str = " | ".join(f"{k}: {v}" for k, v in metrics_social)
-                    prompt_social = reporting.build_standard_report_prompt("Report Social Organico", client_id, date_range_social, ctx.get("context", ""), metriche_str, f"Piattaforme: {', '.join(piattaforme)}", social_sample)
-                    ai_analysis_social = rag.llm.invoke(prompt_social).content
-                    fonti = ctx.get("metadata", {}).get("sources", [])
-                    pdf_bytes = reporting.build_standard_report_pdf("Report Social Organico", client_id, date_range_social, metrics_social, ai_analysis_social, fonti)
+            _det = {
+                "likes": _auto_s(['like', 'reaction', 'mi_piace', 'piace']),
+                "comments": _auto_s(['comment', 'commenti']),
+                "shares": _auto_s(['share', 'condiv']),
+                "reach": _auto_s(['reach', 'portata', 'copert']),
+                "eng": _auto_s(['engagement', 'eng_rate', 'interazion', 'tasso']),
+            }
 
-                    st.success("✅ Report Social generato con successo!")
-                    if fonti:
-                        st.caption("📚 Fonti di memoria usate: " + ", ".join(fonti[:8]))
-                    else:
-                        st.caption("📚 Nessuna memoria cliente trovata: report basato solo sui dati caricati.")
-                    st.markdown("### 📈 Anteprima Analisi")
-                    st.markdown(f'<div class="insight-box">{ai_analysis_social}</div>', unsafe_allow_html=True)
-                    slides_html = reporting.build_report_slides_html("Report Social Organico", client_id, date_range_social, metrics_social, ai_analysis_social, fonti)
-                    st.download_button(label="🖥️ Scarica Slide (HTML)", data=slides_html, file_name=f"Slide_Social_{client_id}_{date_range_social.replace(' ', '_')}.html", mime="text/html", type="primary", use_container_width=True)
-                    st.caption("Apri il file nel browser → naviga con le frecce. Per il PDF: Stampa (Ctrl/Cmd+P) → Salva come PDF, attivando 'Grafica di sfondo'.")
-                    st.download_button(label="📄 (alternativa) Scarica PDF documento", data=pdf_bytes, file_name=f"Report_Social_{client_id}_{date_range_social.replace(' ', '_')}.pdf", mime="application/pdf")
-                except Exception as e:
-                    st.error(f"❌ Errore: {str(e)}")
+            def _idx_s(col):
+                return opts.index(col) if col in opts else 0
+
+            st.markdown("### 3. Colonne del file")
+            _need = not all(_det[k] for k in ['likes', 'reach'])
+            if _need:
+                st.warning("⚠️ Non ho riconosciuto tutte le colonne in automatico. Scegli qui sotto quelle giuste, altrimenti i valori usciranno a 0.")
+            with st.expander("🔧 Verifica/correggi la mappatura colonne", expanded=_need):
+                st.caption("Associa ogni metrica alla colonna del tuo file. Quelle riconosciute sono già pre-selezionate.")
+                sc1, sc2 = st.columns(2)
+                with sc1:
+                    likes_sel = st.selectbox("❤️ Like / Reazioni", opts, index=_idx_s(_det['likes']), key="map_soc_likes")
+                    comments_sel = st.selectbox("💬 Commenti", opts, index=_idx_s(_det['comments']), key="map_soc_comm")
+                    shares_sel = st.selectbox("🔁 Condivisioni", opts, index=_idx_s(_det['shares']), key="map_soc_share")
+                with sc2:
+                    reach_sel = st.selectbox("📡 Reach / Copertura", opts, index=_idx_s(_det['reach']), key="map_soc_reach")
+                    eng_sel = st.selectbox("📈 Engagement Rate", opts, index=_idx_s(_det['eng']), key="map_soc_eng")
+
+            def _col_s(sel):
+                return None if sel == "(nessuna)" else sel
+
+            if st.button("🚀 Genera Report Social", type="primary", use_container_width=True):
+                with st.spinner("Analisi contenuti e generazione report..."):
+                    try:
+                        total_posts = len(df_social)
+                        total_likes = reporting.col_sum(df_social, _col_s(likes_sel))
+                        total_comments = reporting.col_sum(df_social, _col_s(comments_sel))
+                        total_shares = reporting.col_sum(df_social, _col_s(shares_sel))
+                        total_reach = reporting.col_sum(df_social, _col_s(reach_sel))
+                        avg_engagement = reporting.col_mean(df_social, _col_s(eng_sel))
+
+                        if all(v == 0 for v in [total_likes, total_reach]):
+                            st.warning("⚠️ Le metriche principali risultano a 0: apri '🔧 Verifica/correggi la mappatura colonne' qui sopra e seleziona le colonne giuste del tuo file.")
+
+                        social_sample = df_social.head(20).to_string()
+                        ctx = rag.get_client_context(client_id, "ICP, tono di voce, obiettivi social, pain gain")
+                        metrics_social = [("Post Totali", f"{total_posts}"), ("Like Totali", f"{total_likes:,.0f}"), ("Commenti", f"{total_comments:,.0f}"), ("Condivisioni", f"{total_shares:,.0f}"), ("Reach Totale", f"{total_reach:,.0f}"), ("Engagement Rate Medio", f"{avg_engagement:.2f}%")]
+                        metriche_str = " | ".join(f"{k}: {v}" for k, v in metrics_social)
+                        prompt_social = reporting.build_standard_report_prompt("Report Social Organico", client_id, date_range_social, ctx.get("context", ""), metriche_str, f"Piattaforme: {', '.join(piattaforme)}", social_sample)
+                        ai_analysis_social = rag.llm.invoke(prompt_social).content
+                        fonti = ctx.get("metadata", {}).get("sources", [])
+                        pdf_bytes = reporting.build_standard_report_pdf("Report Social Organico", client_id, date_range_social, metrics_social, ai_analysis_social, fonti)
+
+                        st.success("✅ Report Social generato con successo!")
+                        if fonti:
+                            st.caption("📚 Fonti di memoria usate: " + ", ".join(fonti[:8]))
+                        else:
+                            st.caption("📚 Nessuna memoria cliente trovata: report basato solo sui dati caricati.")
+                        st.markdown("### 📈 Anteprima Analisi")
+                        st.markdown(f'<div class="insight-box">{ai_analysis_social}</div>', unsafe_allow_html=True)
+                        slides_html = reporting.build_report_slides_html("Report Social Organico", client_id, date_range_social, metrics_social, ai_analysis_social, fonti)
+                        st.download_button(label="🖥️ Scarica Slide (HTML)", data=slides_html, file_name=f"Slide_Social_{client_id}_{date_range_social.replace(' ', '_')}.html", mime="text/html", type="primary", use_container_width=True)
+                        st.caption("Apri il file nel browser → naviga con le frecce. Per il PDF: Stampa (Ctrl/Cmd+P) → Salva come PDF, attivando 'Grafica di sfondo'.")
+                        st.download_button(label="📄 (alternativa) Scarica PDF documento", data=pdf_bytes, file_name=f"Report_Social_{client_id}_{date_range_social.replace(' ', '_')}.pdf", mime="application/pdf")
+                    except Exception as e:
+                        st.error(f"❌ Errore: {str(e)}")
 
 # ==========================================
 # AGENTE 5: COMPETITOR
