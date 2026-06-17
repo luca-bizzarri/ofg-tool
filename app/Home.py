@@ -5,6 +5,8 @@ import time
 
 import streamlit as st
 import pandas as pd
+import PyPDF2
+import docx
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -49,6 +51,22 @@ def check_password():
         else:
             st.error("Password errata.")
     return False
+
+
+def extract_uploaded(uploaded_file) -> str:
+    """Estrae il testo da un file caricato (PDF/DOCX/TXT)."""
+    name = (uploaded_file.name or "").lower()
+    try:
+        uploaded_file.seek(0)
+        if name.endswith(".pdf"):
+            reader = PyPDF2.PdfReader(uploaded_file)
+            return "\n".join((p.extract_text() or "") for p in reader.pages)
+        if name.endswith(".docx"):
+            d = docx.Document(uploaded_file)
+            return "\n".join(p.text for p in d.paragraphs if p.text.strip())
+        return uploaded_file.read().decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
 
 
 if not check_password():
@@ -213,17 +231,67 @@ elif area == "🗂️ Scheda & Apprendimento":
 
     st.markdown("---")
     st.markdown("### 📂 Memoria attuale")
+    st.caption("Vedi e modifica voce per voce cosa è salvato, ed aggiungi file/testi tuoi a ogni categoria.")
+    STD_CATS = {
+        "📘 Brand Book": "brand_book", "🗣️ Tono di voce / Istruzioni": "istruzioni_creazione",
+        "👤 ICP / Personas": "icp_personas", "✍️ Esempi di copy": "esempi_copy",
+        "🚫 Regole negative": "regole_negative", "📞 Note / Briefing": "note_call",
+        "🔗 Link / Fonti": "link_riferimento",
+    }
     summ = rag.get_memory_summary(client_id)
     for dt, data in summ.items():
         if dt == "errore":
             continue
-        with st.expander(f"{dt} ({data.get('count', 0)} blocchi)"):
+        with st.expander(f"📁 {dt} — {data.get('count', 0)} blocchi · {len(data.get('files', []))} fonti"):
             for f in data.get("files", []):
-                col1, col2 = st.columns([5, 1])
-                col1.write(f"📄 {f}")
-                if col2.button("🗑️", key=f"del_{dt}_{f}"):
+                st.markdown(f"**📄 {f}**")
+                cur = rag.get_document_text(client_id, dt, f)
+                new_txt = st.text_area("contenuto", value=cur, height=150, key=f"edit_{dt}_{f}", label_visibility="collapsed")
+                bc1, bc2, _ = st.columns([1, 1, 3])
+                if bc1.button("💾 Salva modifiche", key=f"save_{dt}_{f}"):
+                    rag.replace_document(client_id, dt, f, new_txt)
+                    st.success("Salvato.")
+                    time.sleep(0.6)
+                    st.rerun()
+                if bc2.button("🗑️ Elimina", key=f"del_{dt}_{f}"):
                     rag.delete_specific_file(client_id, dt, f)
                     st.rerun()
+                st.divider()
+            st.markdown("**➕ Aggiungi a questa categoria**")
+            up = st.file_uploader("File (PDF/DOCX/TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True, key=f"up_{dt}")
+            man = st.text_area("Oppure incolla testo", height=90, key=f"man_{dt}")
+            if st.button("Aggiungi", key=f"add_{dt}"):
+                added = 0
+                for uf in (up or []):
+                    txt = extract_uploaded(uf)
+                    if txt.strip():
+                        ok, _ = rag.add_document(client_id, txt, dt, source_file=uf.name)
+                        added += 1 if ok else 0
+                if man.strip():
+                    ok, _ = rag.add_document(client_id, man.strip(), dt, source_file="testo_manuale")
+                    added += 1 if ok else 0
+                st.success(f"Aggiunti {added} elementi a '{dt}'.")
+                time.sleep(0.8)
+                st.rerun()
+
+    with st.expander("➕ Aggiungi una NUOVA voce (anche in una categoria non ancora presente)"):
+        cat_label = st.selectbox("Categoria", list(STD_CATS.keys()))
+        up2 = st.file_uploader("File (PDF/DOCX/TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True, key="up_new")
+        man2 = st.text_area("Oppure incolla testo", height=100, key="man_new")
+        if st.button("Aggiungi alla memoria", type="primary", key="add_new"):
+            dt2 = STD_CATS[cat_label]
+            added = 0
+            for uf in (up2 or []):
+                txt = extract_uploaded(uf)
+                if txt.strip():
+                    ok, _ = rag.add_document(client_id, txt, dt2, source_file=uf.name)
+                    added += 1 if ok else 0
+            if man2.strip():
+                ok, _ = rag.add_document(client_id, man2.strip(), dt2, source_file="testo_manuale")
+                added += 1 if ok else 0
+            st.success(f"Aggiunti {added} elementi a '{cat_label}'.")
+            time.sleep(0.8)
+            st.rerun()
 
 
 # ==========================================================

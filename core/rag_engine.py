@@ -241,7 +241,7 @@ def add_document(client_id: str, text: str, doc_type: str = "generico", source_f
     text = _normalize_ingested_text(text)
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
     chunks = splitter.split_text(text)
-    metadatas = [{"client_id": client_id_clean, "type": doc_type, "source": source_file} for _ in chunks]
+    metadatas = [{"client_id": client_id_clean, "type": doc_type, "source": source_file, "idx": i} for i in range(len(chunks))]
     vectorstore.add_texts(texts=chunks, metadatas=metadatas)
     return True, f"OK: Salvati {len(chunks)} blocchi (Fonte: {source_file})"
 
@@ -272,6 +272,41 @@ def delete_specific_file(client_id: str, doc_type: str, source_file: str):
         return True, f"OK: '{source_file}' eliminato."
     except Exception as e:
         return False, str(e)
+
+
+def get_document_text(client_id: str, doc_type: str, source_file: str) -> str:
+    """Ritorna il testo completo (chunk concatenati in ordine) di una fonte."""
+    client_id_clean = _clean_id(client_id)
+    try:
+        records, _ = client.scroll(
+            collection_name=collection_knowledge, limit=10000, with_payload=True, with_vectors=False,
+            scroll_filter=Filter(must=[
+                FieldCondition(key="metadata.client_id", match=MatchValue(value=client_id_clean)),
+                FieldCondition(key="metadata.type", match=MatchValue(value=doc_type)),
+                FieldCondition(key="metadata.source", match=MatchValue(value=source_file)),
+            ]),
+        )
+        ordered = sorted(records, key=lambda r: (r.payload.get("metadata", {}) or {}).get("idx", 0))
+        return "\n".join((r.payload.get("page_content", "") or "") for r in ordered).strip()
+    except Exception:
+        return ""
+
+
+def replace_document(client_id: str, doc_type: str, source_file: str, new_text: str):
+    """Sostituisce il contenuto di una fonte: cancella i vecchi chunk e re-inserisce
+    il testo modificato. Consente anche voci brevi (modifica manuale)."""
+    delete_specific_file(client_id, doc_type, source_file)
+    new_text = (new_text or "").strip()
+    if not new_text:
+        return True, "Voce svuotata."
+    if len(new_text) < 50:
+        cid = _clean_id(client_id)
+        vectorstore.add_texts(
+            texts=[new_text],
+            metadatas=[{"client_id": cid, "type": doc_type, "source": source_file, "idx": 0}],
+        )
+        return True, "OK: salvato."
+    return add_document(client_id, new_text, doc_type=doc_type, source_file=source_file)
 
 
 def delete_category(client_id: str, doc_type: str):
