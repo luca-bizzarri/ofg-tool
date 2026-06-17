@@ -15,7 +15,7 @@ except Exception:
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core import rag_engine as rag
-from core import clients, onboarding, ped, creative
+from core import clients, onboarding, ped, creative, slides
 
 _LOGO = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "Logo_no payoff_nero.png")
 
@@ -125,7 +125,7 @@ languages = profile.get("languages", ["IT"])
 channels = profile.get("channels") or clients.CHANNELS[:2]
 
 st.markdown(f'<div class="main-header">{client_id}</div>', unsafe_allow_html=True)
-area = st.radio("Area", ["🚀 Onboarding", "🗂️ Scheda & Apprendimento", "💡 Ideazione", "📅 PED", "📣 ADV"], horizontal=True)
+area = st.radio("Area", ["🚀 Onboarding", "🗂️ Scheda & Apprendimento", "💡 Ideazione", "📅 PED", "📣 ADV", "🖼️ Slide"], horizontal=True)
 st.markdown("---")
 
 
@@ -396,3 +396,40 @@ elif area == "📣 ADV":
         st.markdown(f'<div class="out-box">{out}</div>', unsafe_allow_html=True)
         if fonti:
             st.caption("📚 Fonti memoria: " + ", ".join(fonti[:6]))
+
+
+# ==========================================================
+# 🖼️ SLIDE — genera il markdown OFG per lo Slide Builder
+# ==========================================================
+if area == "🖼️ Slide":
+    st.markdown('<div class="sub-header">Genera le slide OFG da un brief e/o dal testo che incolli — poi le apri nello Slide Builder</div>', unsafe_allow_html=True)
+    sb1, sb2 = st.columns(2)
+    sl_brief = sb1.text_area("🎯 Brief / obiettivo", height=120, placeholder="Es: report di performance H1 2026 per questo cliente, 8 slide, tono professionale.")
+    sl_text = sb2.text_area("📋 Testo da strutturare (incolla qui)", height=120, placeholder="Incolla contenuti da PPT, Word, email, appunti…")
+    sl_max = st.slider("Numero massimo di slide", 4, 20, 10)
+    use_brand = st.checkbox(f"Usa la memoria di brand del cliente «{client_id}»", value=bool(client_id))
+
+    if st.button("✨ Genera slide", type="primary", use_container_width=True):
+        if not sl_brief.strip() and not sl_text.strip():
+            st.error("Inserisci un brief oppure incolla del testo.")
+        else:
+            with st.spinner("L'AI sta componendo le slide…"):
+                try:
+                    res = slides.compose(
+                        brief=sl_brief,
+                        text=sl_text,
+                        client_id=(client_id if use_brand else None),
+                        max_slides=sl_max,
+                    )
+                    st.session_state["slides_md"] = res["markdown"]
+                except Exception as e:
+                    st.error(f"Generazione non riuscita: {e}")
+
+    if st.session_state.get("slides_md"):
+        md = st.session_state["slides_md"]
+        n = len([b for b in re.split(r'\n\s*-{3,}\s*\n', md) if b.strip()])
+        st.success(f"✅ Generate {n} slide. Copia il markdown qui sotto e incollalo nello Slide Builder (pannello sorgente, oppure Importa → Markdown).")
+        st.code(md, language="markdown")
+        st.download_button("⬇️ Scarica .md", data=md, file_name="presentazione-ofg.md", mime="text/markdown")
+        st.markdown("[↗️ Apri lo Slide Builder](https://luca-bizzarri.github.io/ofg-slide-builder/)")
+        st.caption("Le foto si aggiungono direttamente nello Slide Builder (galleria → slide).")
