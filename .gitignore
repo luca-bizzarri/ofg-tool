@@ -30,3 +30,7 @@ uploads/
 *_esempio.*
 _*test.py
 _qa_recheck.py
+
+# === File dati cliente / PED di riferimento (NON pubblicare) ===
+*.xlsx
+PED_*.xlsx
