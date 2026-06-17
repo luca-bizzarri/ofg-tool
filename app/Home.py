@@ -408,7 +408,17 @@ if area == "🖼️ Slide":
     sl_brief = sb1.text_area("🎯 Brief / obiettivo", height=120, placeholder="Es: report di performance H1 2026 per questo cliente, 8 slide, tono professionale.")
     sl_text = sb2.text_area("📋 Testo da strutturare (incolla qui)", height=120, placeholder="Incolla contenuti da PPT, Word, email, appunti…")
     sl_max = st.slider("Numero massimo di slide", 4, 20, 10)
-    use_brand = st.checkbox(f"Usa la memoria di brand del cliente «{client_id}»", value=bool(client_id))
+    with st.expander("🎯 Identità di brand del cliente (l'AI la rispetta SEMPRE)", expanded=not any((profile.get("telos") or {}).values())):
+        _telos = clients.empty_telos()
+        _telos.update(profile.get("telos") or {})
+        _vals = {}
+        for _k, _label in clients.TELOS_FIELDS:
+            _vals[_k] = st.text_area(_label, value=_telos.get(_k, ""), height=70, key=f"telos_{_k}")
+        if st.button("💾 Salva identità di brand", key="save_telos"):
+            profile["telos"] = _vals
+            clients.save_profile(client_id, profile)
+            st.success("Identità salvata: verrà usata in ogni generazione di slide.")
+    use_brand = st.checkbox("Usa anche la memoria documentale del cliente (Qdrant)", value=bool(client_id))
 
     if st.button("✨ Genera slide", type="primary", use_container_width=True):
         if not sl_brief.strip() and not sl_text.strip():
@@ -419,8 +429,9 @@ if area == "🖼️ Slide":
                     res = slides.compose(
                         brief=sl_brief,
                         text=sl_text,
-                        client_id=(client_id if use_brand else None),
+                        client_id=client_id,
                         max_slides=sl_max,
+                        use_rag=use_brand,
                     )
                     st.session_state["slides_md"] = res["markdown"]
                 except Exception as e:

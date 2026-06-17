@@ -22,7 +22,40 @@ DEFAULT_PROFILE = {
     "languages": ["IT"],
     "channels": ["Instagram", "Facebook"],
     "rubriche": [],   # [{nome, descrizione, taglio, tipologia, esempi}]
+    "telos": {},      # identita' di brand "sempre presente" (vedi TELOS_FIELDS)
 }
+
+# --- TELOS del cliente -----------------------------------------------------
+# Identita' di brand esplicita, iniettata in OGNI generazione come contesto
+# deterministico ("conta piu' il contesto giusto che il modello"). Tutti i
+# campi sono testo libero; quelli vuoti non finiscono nel prompt.
+TELOS_FIELDS = [
+    ("missione", "Cosa fa il brand / missione"),
+    ("posizionamento", "Posizionamento e differenza dai competitor"),
+    ("tono_di_voce", "Tono di voce"),
+    ("esempi_tov", "Esempi di frasi on-brand (tono giusto)"),
+    ("icp", "Cliente ideale / pubblico (ICP)"),
+    ("do", "DA FARE (sempre)"),
+    ("dont", "DA EVITARE (mai)"),
+    ("claim_vietati", "Claim/parole VIETATE"),
+    ("parole_chiave", "Parole chiave / lessico di brand"),
+]
+
+
+def empty_telos() -> dict:
+    return {k: "" for k, _ in TELOS_FIELDS}
+
+
+def telos_text(telos: dict) -> str:
+    """Rende il TELOS in un blocco testuale per il prompt (salta i campi vuoti)."""
+    if not isinstance(telos, dict):
+        return ""
+    parts = []
+    for key, label in TELOS_FIELDS:
+        val = (telos.get(key) or "").strip()
+        if val:
+            parts.append("- %s: %s" % (label, val))
+    return "\n".join(parts)
 
 # Valori di riferimento (generici, validi per ogni cliente) usati nelle UI.
 CONTENT_TYPES = ["Product", "Engage", "Education", "Brand", "Event", "Holidays"]
@@ -41,6 +74,7 @@ def get_profile(client_id: str) -> dict:
         "languages": list(DEFAULT_PROFILE["languages"]),
         "channels": list(DEFAULT_PROFILE["channels"]),
         "rubriche": [],
+        "telos": {},
     }
     try:
         recs = rag.client.retrieve(
@@ -63,6 +97,7 @@ def save_profile(client_id: str, profile: dict) -> bool:
         "languages": profile.get("languages") or ["IT"],
         "channels": profile.get("channels") or [],
         "rubriche": profile.get("rubriche") or [],
+        "telos": profile.get("telos") or {},
     }
     point = PointStruct(
         id=_pid(cid),

@@ -53,8 +53,15 @@ def _img_lines(images):
     return "\n".join(out) if out else "(nessuna immagine disponibile)"
 
 
-def build_user_prompt(brief, text, images, ctx, blacklist, max_slides):
-    parts = [
+def build_user_prompt(brief, text, images, telos, ctx, blacklist, max_slides):
+    parts = []
+    if telos:
+        parts += [
+            "## IDENTITÀ DI BRAND DEL CLIENTE — RISPETTALA SEMPRE",
+            telos,
+            "",
+        ]
+    parts += [
         "## OBIETTIVO / BRIEF",
         (brief or "").strip() or "(non fornito)",
         "",
@@ -89,30 +96,42 @@ def strip_fences(md):
     return "\n".join(lines[start:]).strip()
 
 
-def compose(brief="", text="", images=None, client_id=None, max_slides=12):
+def compose(brief="", text="", images=None, client_id=None, max_slides=12, use_rag=True):
     """Genera il markdown OFG. Ritorna {markdown, used_image_ids, model}.
     Lancia ValueError se manca sia brief sia testo. Import LAZY di rag_engine
-    (inizializza Qdrant) per non appesantire chi importa solo le utility."""
+    (inizializza Qdrant) per non appesantire chi importa solo le utility.
+
+    Se client_id e' valorizzato, l'IDENTITA' DI BRAND (telos) viene SEMPRE
+    iniettata come contesto deterministico. use_rag attiva in piu' il recupero
+    documentale da Qdrant (piu' pesante, opzionale)."""
     if not (brief and brief.strip()) and not (text and text.strip()):
         raise ValueError("Serve almeno un brief o del testo.")
 
     from core import config
     from core import rag_engine as rag
 
-    ctx, blacklist = "", []
+    telos_txt, ctx, blacklist = "", "", []
     if client_id and str(client_id).strip():
-        query = (brief or text or "")[:500]
+        # TELOS: sempre presente, costa solo una lettura del profilo.
         try:
-            ctx = rag.get_context_text(client_id, query) or ""
+            from core import clients
+            telos_txt = clients.telos_text(clients.get_profile(client_id).get("telos"))
         except Exception:
-            ctx = ""
+            telos_txt = ""
         try:
             blacklist = rag.extract_constraints(client_id) or []
         except Exception:
             blacklist = []
+        # Memoria documentale (Qdrant): opzionale.
+        if use_rag:
+            query = (brief or text or "")[:500]
+            try:
+                ctx = rag.get_context_text(client_id, query) or ""
+            except Exception:
+                ctx = ""
 
     prompt = SYSTEM_PROMPT + "\n\n" + build_user_prompt(
-        brief, text, images or [], ctx, blacklist, max_slides
+        brief, text, images or [], telos_txt, ctx, blacklist, max_slides
     )
     raw = rag.llm.invoke(prompt).content
     markdown = strip_fences(raw)
