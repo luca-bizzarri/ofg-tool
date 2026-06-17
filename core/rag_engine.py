@@ -166,7 +166,7 @@ except Exception:
     pass
 
 vectorstore = QdrantVectorStore(client=client, collection_name=collection_knowledge, embedding=embeddings)
-llm = ChatOpenAI(model=config.MODEL_NAME, api_key=config.API_KEY, base_url=config.API_BASE, temperature=0.2)
+llm = ChatOpenAI(model=config.MODEL_NAME, api_key=config.API_KEY, base_url=config.API_BASE, temperature=0.2, max_tokens=4096)
 
 
 def _clean_id(client_id: str) -> str:
