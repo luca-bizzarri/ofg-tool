@@ -73,10 +73,13 @@ def sanitize_pdf_text(text) -> str:
     return s.encode("latin-1", "ignore").decode("latin-1")
 
 
-def _norm_number(x: str) -> str:
-    """Normalizza una stringa numerica con separatori IT/US e simboli valuta."""
-    x = x.strip()
-    if not x or x == "-":
+def _norm_number(x) -> str:
+    """Normalizza una stringa numerica con separatori IT/US e simboli valuta.
+    Robusto a None / NaN / float in ingresso (celle vuote dei file reali)."""
+    if x is None:
+        return ""
+    x = str(x).strip()
+    if not x or x == "-" or x.lower() == "nan":
         return ""
     has_dot, has_comma = "." in x, "," in x
     if has_dot and has_comma:
@@ -89,6 +92,11 @@ def _norm_number(x: str) -> str:
         if len(dec) == 3 and x.count(",") == 1:
             return x.replace(",", "")                      # 1,000 -> 1000 (migliaia)
         return x.replace(",", ".")                         # 10,50 -> 10.50 (decimale)
+    if has_dot:
+        # Punto isolato: 3 cifre dopo l'ultimo punto = separatore migliaia
+        # (2.000 -> 2000, 1.234.567 -> 1234567); altrimenti decimale (10.50, 1.71).
+        if len(x.split(".")[-1]) == 3:
+            return x.replace(".", "")
     return x
 
 
@@ -96,7 +104,7 @@ def to_numeric_series(series):
     """Converte una colonna pandas in numerico gestendo simboli valuta e
     separatori migliaia/decimali tipici degli export Meta/Google. I valori non
     convertibili diventano 0 (cosi' i calcoli non crashano sui file reali)."""
-    s = series.astype(str).str.replace(r"[^\d,.\-]", "", regex=True).map(_norm_number)
+    s = series.fillna("").astype(str).str.replace(r"[^\d,.\-]", "", regex=True).map(_norm_number)
     return pd.to_numeric(s, errors="coerce").fillna(0)
 
 
