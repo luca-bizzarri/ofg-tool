@@ -581,7 +581,7 @@ if area == "📊 Report":
 
     st.markdown("---")
     st.markdown("### 📥 Dati del report")
-    src = st.radio("Sorgente dati", ["Carica file del cliente (PDF + Excel)", "Dati di esempio (Instagram)", "Carica file JSON"], horizontal=True)
+    src = st.radio("Sorgente dati", ["Carica file del cliente (PDF + Excel)", "Carica file JSON"], horizontal=True)
 
     def _store(chans, period, sig, detect=None):
         # Parsing tenuto in sessione: le correzioni manuali non si perdono ai rerun.
@@ -640,11 +640,6 @@ if area == "📊 Report":
                 _store(chans, def_period, sig, detect)
         elif str(st.session_state.get("rep_sig", "")).startswith("FILES:"):
             _store([], "", "")
-    elif src == "Dati di esempio (Instagram)":
-        if st.session_state.get("rep_sig") != "SAMPLE":
-            s = report_render.load_sample()
-            s.update({"id": "instagram", "label": "Instagram", "type": "instagram"})
-            _store([s], s.get("meta", {}).get("period", ""), "SAMPLE", ["Dati di esempio Instagram"])
     else:
         up = st.file_uploader("File JSON (report multi canale o singolo canale)", type=["json"], key="report_json")
         if up is not None and st.session_state.get("rep_sig") != "JSON:" + up.name:
