@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{TITLE}}</title>
+<style>
+  :root {
+    --bg: #f7f7f7;
+    --panel: #ffffff;
+    --ink: #111111;
+    --muted: #5d5d5d;
+    --line: #e7e7e7;
+    --navy: {{DARK}};
+    --purple: {{PRIMARY}};
+    --pink: {{DARK}};
+    --orange: {{SECONDARY}};
+    --teal: #3a3a3a;
+    --green: #18865b;
+    --amber: #a45a16;
+    --red: #b5473f;
+    --soft-purple: #fff0e8;
+    --soft-pink: #f4f4f4;
+    --soft-orange: #fff5ec;
+    --soft-teal: #f2f2f2;
+    --shadow: 0 18px 45px rgba(25, 23, 36, .09);
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: Inter, Arial, Helvetica, sans-serif;
+    color: var(--ink);
+    background: radial-gradient(circle at top left, #fff3ee 0, #f7f7f7 38%, #ffffff 100%);
+    line-height: 1.45;
+  }
+  a { color: inherit; }
+  .app { display: grid; grid-template-columns: 286px minmax(0, 1fr); min-height: 100vh; }
+  aside {
+    position: sticky; top: 0; height: 100vh; padding: 28px 22px; background: var(--navy); color: #fff;
+    display: flex; flex-direction: column; gap: 22px; overflow-y: auto;
+  }
+  .brandmark { display: grid; gap: 13px; align-items: start; }
+  .brand-logo { width: 178px; max-width: 100%; height: auto; display: block; filter: drop-shadow(0 8px 18px rgba(0,0,0,.18)); }
+  .logo { width: 44px; height: 44px; border-radius: 15px; background: linear-gradient(135deg, var(--purple), var(--orange) 55%, #111111); display: grid; place-items: center; font-weight: 900; letter-spacing: -.06em; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+  .brandmark h1 { font-size: 16px; margin: 0; line-height: 1.15; }
+  .brandmark span { display:block; color: rgba(255,255,255,.72); font-size: 12px; margin-top: 3px; }
+  nav { display: grid; gap: 7px; }
+  nav a {
+    text-decoration: none; padding: 12px 13px; border-radius: 14px; color: rgba(255,255,255,.82); font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center; transition: .2s ease;
+  }
+  nav a:hover, nav a.active { background: rgba(255,255,255,.12); color: #fff; }
+  nav small { color: rgba(255,255,255,.52); font-size: 11px; }
+  .side-note { margin-top: auto; padding: 14px; border-radius: 18px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.82); font-size: 12px; }
+  .side-note strong { display:block; color:#fff; margin-bottom: 5px; }
+  main { padding: 30px 34px 64px; min-width: 0; }
+  section { scroll-margin-top: 20px; margin-bottom: 30px; }
+  .hero {
+    background: linear-gradient(135deg, #111111 0%, #1b1b1b 34%, var(--purple) 100%);
+    color: #fff; border-radius: 30px; padding: 34px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .hero:after { content:""; position:absolute; inset:auto -90px -130px auto; width: 340px; height: 340px; border-radius: 50%; background: rgba(255,255,255,.12); }
+  .hero > * { position: relative; z-index: 2; }
+  .hero-brand { margin-bottom: 22px; }
+  .hero-logo { width: min(260px, 58vw); height: auto; display:block; filter: drop-shadow(0 14px 26px rgba(0,0,0,.20)); }
+  .eyebrow { color: #f8d8ef; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px; }
+  .hero h2 { font-size: clamp(30px, 4vw, 54px); line-height: .98; margin: 0 0 16px; max-width: 920px; letter-spacing: -0.04em; }
+  .hero p { max-width: 820px; margin: 0; color: rgba(255,255,255,.90); font-size: 17px; }
+  .hero-actions { display:flex; flex-wrap: wrap; gap:10px; margin-top: 24px; position: relative; z-index: 2; }
+  .btn { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 10px 14px; font-weight: 800; font-size: 13px; cursor: pointer; transition: .2s ease; text-decoration: none; display:inline-flex; align-items:center; gap: 8px; }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(25,23,36,.08); }
+  .hero .btn { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.28); color:#fff; backdrop-filter: blur(8px); }
+  .btn.primary { background: var(--purple); border-color: var(--purple); color:#fff; box-shadow: 0 10px 22px rgba(233,80,28,.22); }
+  .btn.active { background: var(--navy); color:#fff; border-color: var(--navy); }
+  .grid { display:grid; gap: 18px; }
+  .grid.kpis { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .grid.two { grid-template-columns: 1.05fr .95fr; }
+  .grid.three { grid-template-columns: repeat(3, 1fr); }
+  .grid.four { grid-template-columns: repeat(4, 1fr); }
+  .card {
+    background: var(--panel); border: 1px solid rgba(231,225,235,.95); border-radius: var(--radius); padding: 20px;
+    box-shadow: 0 10px 28px rgba(25,23,36,.045);
+  }
+  .card h3 { margin: 0 0 10px; font-size: 21px; letter-spacing: -0.02em; }
+  .card p { margin: 0; color: var(--muted); }
+  .section-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-end; margin: 30px 0 14px; }
+  .section-head h2 { margin:0; font-size: 28px; letter-spacing: -0.035em; }
+  .section-head p { margin: 5px 0 0; color: var(--muted); max-width: 760px; }
+  .kpi { min-height: 138px; display:flex; flex-direction:column; justify-content:space-between; border-radius: 22px; padding: 17px; background: #fff; border:1px solid var(--line); cursor:pointer; transition:.2s ease; }
+  .kpi:hover, .kpi.active { transform: translateY(-2px); box-shadow: var(--shadow); border-color: rgba(233,80,28,.38); }
+  .kpi .label { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+  .kpi .value { font-size: 31px; font-weight: 900; letter-spacing:-.05em; margin-top: 8px; }
+  .delta { display:inline-flex; align-items:center; gap:5px; font-weight: 900; font-size: 12px; padding: 6px 9px; border-radius: 999px; margin-top: 10px; width: max-content; }
+  .delta.green { color: var(--green); background: #e8f7ef; }
+  .delta.amber { color: var(--amber); background: var(--soft-orange); }
+  .delta.neutral { color: var(--muted); background: #f3f3f3; }
+  .insight-panel { border-left: 5px solid var(--purple); background: linear-gradient(90deg, var(--soft-purple), #ffffff); }
+  .insight-panel strong { display:block; margin-bottom: 7px; }
+  .muted { color: var(--muted); }
+  .tiny { font-size: 12px; color: var(--muted); }
+  .pill-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .pill { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:999px; padding:7px 10px; font-weight:800; font-size:12px; background:#fff; }
+  .pill.purple { background: var(--soft-purple); color:#c64718; border-color:#ffd9c7; }
+  .pill.pink { background: var(--soft-pink); color:#111111; border-color:#dddddd; }
+  .pill.teal { background: var(--soft-teal); color:#333333; border-color:#e2e2e2; }
+  .metric-list { display:grid; gap:12px; }
+  .metric-row { display:grid; grid-template-columns: 1fr auto; gap: 14px; align-items:center; padding: 13px; border:1px solid var(--line); border-radius: 16px; background:#fff; }
+  .metric-row strong { display:block; }
+  .metric-row span { color:var(--muted); font-size:13px; }
+  .number { font-weight:900; font-size:21px; letter-spacing:-.03em; }
+  .bar-chart { display:grid; gap:12px; margin-top: 16px; }
+  .bar-row { display:grid; grid-template-columns: minmax(115px, 170px) 1fr auto; align-items:center; gap:12px; }
+  .bar-label { font-weight:800; color:var(--ink); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .track { height: 13px; border-radius:999px; background:#efefef; overflow:hidden; position:relative; }
+  .fill { height:100%; border-radius:999px; background: linear-gradient(90deg, var(--purple), var(--pink)); width:0%; transition: width .75s ease; }
+  .fill.teal { background: linear-gradient(90deg, #2a2a2a, #6a6a6a); }
+  .fill.orange { background: linear-gradient(90deg, var(--orange), var(--purple)); }
+  .bar-value { font-weight:900; font-size:13px; min-width: 58px; text-align:right; }
+  .split-tools { display:flex; flex-wrap: wrap; gap:8px; margin: 12px 0 16px; }
+  .donut-wrap { display:grid; grid-template-columns: 180px 1fr; gap:18px; align-items:center; }
+  .donut { width: 165px; height:165px; border-radius:50%; background: conic-gradient(var(--purple) 0deg 128.6deg, var(--pink) 128.6deg 231.4deg, var(--orange) 231.4deg 257deg, var(--teal) 257deg 257deg, #e7e7e7 257deg 360deg); position:relative; box-shadow: inset 0 0 0 1px rgba(0,0,0,.04); }
+  .donut:after { content:"14"; position:absolute; inset: 27px; border-radius:50%; background:#fff; display:grid; place-items:center; font-size:34px; font-weight:900; letter-spacing:-.05em; }
+  .legend { display:grid; gap:9px; }
+  .legend-item { display:flex; justify-content:space-between; gap:12px; border-bottom:1px dashed var(--line); padding-bottom:8px; }
+  .legend-item:last-child { border-bottom:0; }
+  .dot { width:10px; height:10px; border-radius:50%; background: var(--purple); flex:0 0 auto; margin-top:5px; }
+  .dot.pink { background: var(--pink); } .dot.orange { background: var(--orange); } .dot.teal { background: var(--teal); } .dot.gray { background:#b7afc0; }
+  table { width:100%; border-collapse: collapse; overflow:hidden; border-radius: 18px; }
+  th, td { padding: 13px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { font-size:12px; color:#333333; text-transform:uppercase; letter-spacing:.07em; background:#f7f2ef; cursor:pointer; user-select:none; }
+  td { font-size:14px; }
+  tr:hover td { background:#fcf7f4; }
+  .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:18px; background:#fff; }
+  .tag { display:inline-flex; padding:5px 8px; border-radius:999px; background: var(--soft-purple); color:#c64718; font-size:12px; font-weight:900; }
+  .tag.reel { background: #111111; color:#ffffff; }
+  .tag.image { background: #f4f4f4; color:#111111; }
+  .tag.carousel { background: var(--soft-orange); color:#a45a16; }
+  .content-card { display:flex; flex-direction:column; gap:14px; min-height:100%; }
+  .content-top { display:flex; justify-content:space-between; gap:12px; align-items:start; }
+  .content-title { font-size:18px; font-weight:900; letter-spacing:-.02em; margin:0; }
+  .content-desc { color:var(--muted); font-size:14px; min-height: 83px; }
+  .mini-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:9px; }
+  .mini-stat { border:1px solid var(--line); border-radius:14px; padding:10px; background:#fdfdfd; }
+  .mini-stat small { color:var(--muted); display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:800; }
+  .mini-stat strong { display:block; font-size:19px; margin-top:3px; }
+  .accordion { display:grid; gap:10px; }
+  details { border:1px solid var(--line); background:#fff; border-radius:18px; padding:14px 16px; }
+  summary { cursor:pointer; font-weight:900; }
+  details p { margin-top:10px; }
+  .tabs { display:flex; flex-wrap:wrap; gap:9px; margin-bottom: 14px; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  .road-list { display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; }
+  .road-item { padding:16px; border-radius:18px; background:#fff; border:1px solid var(--line); }
+  .road-item strong { display:block; margin-bottom:6px; }
+  .quote { font-size:22px; line-height:1.25; letter-spacing:-.03em; font-weight:900; }
+  .callout { padding:18px; border-radius:20px; background:linear-gradient(135deg, var(--soft-purple), #fff); border:1px solid #ded2fb; }
+  .narrative-grid { display:grid; grid-template-columns: 1.1fr .9fr; gap:18px; align-items:start; }
+  .narrative-card { background:#fff; border:1px solid var(--line); border-radius:20px; padding:18px; box-shadow: 0 10px 28px rgba(25,23,36,.04); }
+  .narrative-card h3 { margin:0 0 9px; font-size:19px; letter-spacing:-.02em; }
+  .narrative-card p { margin:0; color:var(--muted); }
+  .soft-index { display:grid; gap:10px; }
+  .soft-index .metric-row { background:linear-gradient(90deg,#fff,var(--soft-purple)); }
+  .heat { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+  .heat-card { border-radius:18px; border:1px solid var(--line); padding:16px; background:#fff; position:relative; overflow:hidden; }
+  .heat-card:before { content:""; position:absolute; inset:0 auto 0 0; width:5px; background:linear-gradient(180deg,var(--purple),var(--pink)); }
+  .heat-card b { display:block; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
+  .heat-card strong { display:block; font-size:18px; margin:4px 0 8px; }
+  .footer { color:var(--muted); font-size:12px; text-align:center; padding:24px 0 0; }
+  .mobile-top { display:none; position:sticky; top:0; z-index:10; background:rgba(255,255,255,.9); backdrop-filter: blur(10px); border-bottom:1px solid var(--line); padding:10px 14px; }
+  .mobile-top select { width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--line); font-weight:800; background:#fff; }
+  @media (max-width: 1180px) {
+    .grid.kpis { grid-template-columns: repeat(3, 1fr); }
+    .grid.two, .grid.three, .grid.four, .narrative-grid { grid-template-columns: 1fr; }
+    .road-list, .heat { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 820px) {
+    .app { display:block; }
+    aside { display:none; }
+    .mobile-top { display:block; }
+    main { padding: 18px 14px 44px; }
+    .hero { padding: 25px 20px; border-radius:24px; }
+    .hero-logo { width: min(210px, 72vw); }
+    .grid.kpis { grid-template-columns: 1fr; }
+    .donut-wrap { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 1fr; gap:7px; }
+    .bar-value { text-align:left; }
+    .section-head { display:block; }
+    .mini-grid { grid-template-columns: 1fr; }
+  }
+  @media print {
+    aside, .mobile-top, .hero-actions, .btn, .split-tools, .tabs { display:none !important; }
+    .app { display:block; } main { padding:0; } section { break-inside: avoid; }
+    body { background:#fff; } .card, .hero, .kpi { box-shadow:none; }
+  }
+</style>
+</head>
+<body>
+<div class="mobile-top"><select id="mobileNav"></select></div>
+<div class="app">
+  <aside>
+    <div class="brandmark"><img class="brand-logo" src="{{LOGO}}" alt="Logo GESA" /><div><h1>Instagram Report</h1><span>Report interattivo · Maggio 2026</span></div></div>
+    <nav id="sideNav">
+      <a href="#overview">Overview <small>01</small></a>
+      <a href="#considerazioni">Considerazioni <small>02</small></a>
+      <a href="#kpi">KPI <small>03</small></a>
+      <a href="#paid-organic">Paid vs Organic <small>04</small></a>
+      <a href="#audience">Audience <small>05</small></a>
+      <a href="#contenuti">Contenuti <small>06</small></a>
+      <a href="#hashtag">Hashtag <small>07</small></a>
+      <a href="#timing">Timing <small>08</small></a>
+      <a href="#community">Community <small>09</small></a>
+      <a href="#roadmap">Roadmap <small>10</small></a>
+      <a href="#conclusioni">Conclusioni <small>11</small></a>
+    </nav>
+    <div class="side-note"><strong>Chiave di lettura</strong>Il mese evidenzia una buona crescita in visibilità e follower; il dialogo può essere rafforzato con gradualità.</div>
+  </aside>
+  <main>
+    <section id="overview" class="hero">
+      <div class="hero-brand"><img class="hero-logo" src="{{LOGO}}" alt="Logo GESA" /></div>
+      <div class="eyebrow">GESA Group · Instagram · 1-31 maggio 2026</div>
+      <h2>Un mese di crescita visibile, sostenuto dalla distribuzione paid e da segnali organici da consolidare.</h2>
+      <p>Il report separa volume, interesse e opportunità operative: views e reach beneficiano della sponsorizzazione, mentre i contenuti tecnici mostrano segnali utili per costruire format più salvabili, verticali e conversazionali.</p>
+      <div class="hero-actions">
+        <a class="btn" href="#contenuti">Vai ai contenuti migliori</a>
+        <a class="btn" href="#roadmap">Vai alla roadmap</a>
+        <button class="btn" onclick="window.print()">Stampa / Salva PDF</button>
+      </div>
+    </section>
+
+    <section id="considerazioni">
+      <div class="section-head"><div><h2>Considerazioni e lettura dei risultati</h2><p>Una lettura qualitativa, volutamente morbida, per affiancare i dati numerici e rendere più chiaro il significato delle performance.</p></div></div>
+      <div class="narrative-grid">
+        <div class="card callout">
+          <h3>Considerazione generale</h3>
+          <p>Nel mese di maggio il profilo Instagram di GESA mostra un andamento complessivamente positivo, con una crescita visibile sia in termini di audience sia di visualizzazioni dei contenuti. Il dato va letto considerando il contributo della componente paid, che ha sostenuto in modo rilevante la distribuzione, ma anche alcuni segnali organici utili, soprattutto nella crescita della community e nei salvataggi.</p>
+          <p style="margin-top:12px">Instagram si conferma quindi un canale utile per aumentare la riconoscibilità del brand e rendere più accessibili temi tecnici legati a coperture, sicurezza, fissaggi, linee vita e lavoro in quota.</p>
+        </div>
+        <div class="soft-index">
+          <div class="metric-row"><div><strong>Crescita community</strong><span>Il profilo chiude il mese con una crescita netta significativa, da consolidare con format ricorrenti.</span></div><div class="number">+161</div></div>
+          <div class="metric-row"><div><strong>Interesse utile</strong><span>I salvataggi crescono e indicano contenuti percepiti come pratici o consultabili.</span></div><div class="number">+700%</div></div>
+          <div class="metric-row"><div><strong>Conversazione</strong><span>I commenti restano assenti: è un'area da sviluppare con gradualità, senza forzare il tono.</span></div><div class="number">0</div></div>
+        </div>
+      </div>
+      <div class="grid four" style="margin-top:18px">
+        <div class="narrative-card">
+          <h3>Lettura delle performance</h3>
+          <p>L'engagement cresce in modo significativo e si concentra soprattutto su like e salvataggi. Per un profilo B2B tecnico è un segnale coerente: il pubblico tende più a osservare e conservare contenuti utili che a commentare spontaneamente.</p>
+        </div>
+        <div class="narrative-card">
+          <h3>Punti di forza</h3>
+          <p>I temi più forti sono allineati al posizionamento di GESA: sicurezza, sistemi anticaduta, fissaggi, coperture e soluzioni operative. I contenuti migliori confermano l'efficacia di un approccio pratico e verticale.</p>
+        </div>
+        <div class="narrative-card">
+          <h3>Punti di attenzione</h3>
+          <p>La visibilità è positiva, ma sostenuta in modo importante dalla spinta paid. Nei prossimi mesi sarà utile rafforzare anche la risposta organica attraverso contenuti più riconoscibili, utili e interattivi.</p>
+        </div>
+        <div class="narrative-card">
+          <h3>Sintesi soft</h3>
+          <p>Il mese offre segnali incoraggianti: il profilo cresce, i contenuti tecnici interessano e la community si amplia. Il passo successivo è rendere questa crescita più stabile e più partecipata.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="kpi">
+      <div class="section-head"><div><h2>Dashboard KPI</h2><p>Una vista sintetica dei dati principali del mese. Clicca su una card per leggere l'interpretazione strategica.</p></div></div>
+      <div id="kpiGrid" class="grid kpis"></div>
+      <div id="kpiInsight" class="card insight-panel" style="margin-top:18px"></div>
+    </section>
+
+    <section id="paid-organic">
+      <div class="section-head"><div><h2>Paid vs Organic</h2><p>La crescita del mese è da leggere su due piani: il paid genera scala, l'organico segnala quali temi hanno più qualità di attenzione.</p></div></div>
+      <div class="grid two">
+        <div class="card">
+          <h3>Distribuzione per canale</h3>
+          <div class="split-tools" id="splitButtons"></div>
+          <div id="splitChart" class="bar-chart"></div>
+          <p class="tiny" style="margin-top:12px">Nota: i direct message sono inclusi nell'engagement totale, ma non risultano ripartiti tra organico e paid nell'export.</p>
+        </div>
+        <div class="card">
+          <h3>Engagement rate</h3>
+          <div class="table-wrap"><table id="rateTable"><thead><tr><th>Metrica</th><th>Organico</th><th>Paid</th><th>Totale</th><th>Insight</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
+      <div class="grid two" style="margin-top:18px">
+        <div class="card">
+          <h3>Composizione engagement</h3>
+          <div id="engagementChart" class="bar-chart"></div>
+        </div>
+        <div class="card callout">
+          <h3>Insight centrale</h3>
+          <p class="quote">Il paid sta ampliando la visibilità. Il passo successivo è accompagnare questo pubblico verso interazioni più qualificate.</p>
+          <p style="margin-top:12px">Il dato più forte è la crescita dei salvataggi: +700%. Questo segnala che i contenuti utili, tecnici e consultabili hanno potenziale, soprattutto se trasformati in format ricorrenti.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="audience">
+      <div class="section-head"><div><h2>Audience e crescita</h2><p>Il profilo chiude il mese con 706 follower e una crescita netta di +161. Il pubblico è prevalentemente italiano e concentrato sulle principali città.</p></div></div>
+      <div class="grid three">
+        <div class="card"><h3>Crescita follower</h3><div id="growthChart" class="bar-chart"></div></div>
+        <div class="card"><h3>Distribuzione città</h3><div id="geoChart" class="bar-chart"></div><p class="tiny" style="margin-top:10px">Valori letti dalla classifica città dell'export.</p></div>
+        <div class="card">
+          <h3>Profilo audience</h3>
+          <div class="metric-list">
+            <div class="metric-row"><div><strong>Paese principale</strong><span>Italia nettamente dominante rispetto agli altri Paesi mostrati.</span></div><div class="number">IT</div></div>
+            <div class="metric-row"><div><strong>Fascia più forte</strong><span>Il grafico demografico evidenzia soprattutto la fascia 35-44.</span></div><div class="number">35-44</div></div>
+            <div class="metric-row"><div><strong>Genere prevalente</strong><span>Audience a prevalenza maschile, coerente con settore tecnico/cantiere.</span></div><div class="number">M</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contenuti">
+      <div class="section-head"><div><h2>Performance contenuti</h2><p>Nel mese sono stati pubblicati 14 contenuti. Le views sui post crescono, mentre l'engagement sui post cala leggermente: serve lavorare su format più salvabili e interattivi.</p></div></div>
+      <div class="grid two">
+        <div class="card">
+          <h3>Mix di pubblicazione</h3>
+          <div class="donut-wrap"><div class="donut"></div><div class="legend" id="mixLegend"></div></div>
+        </div>
+        <div class="card">
+          <h3>Formato migliore per engagement medio</h3>
+          <div id="formatEngagementChart" class="bar-chart"></div>
+          <p class="tiny" style="margin-top:12px">Il Reel è il formato con engagement medio più alto, ma nel mese ne è stato pubblicato solo uno: il dato è interessante, ma da validare con più pubblicazioni.</p>
+        </div>
+      </div>
+
+      <div class="section-head"><div><h2 style="font-size:24px">Top content</h2><p>I tre migliori contenuti per views mostrano una direzione chiara: sicurezza, fissaggi e soluzioni concrete per coperture.</p></div><div class="pill-row" id="contentFilters"></div></div>
+      <div id="contentCards" class="grid three"></div>
+      <div class="card" style="margin-top:18px">
+        <h3>Tabella contenuti ordinabile</h3>
+        <p style="margin-bottom:12px">Clicca sulle intestazioni per ordinare i dati.</p>
+        <div class="table-wrap"><table id="contentTable"><thead><tr><th data-sort="date">Data</th><th data-sort="type">Formato</th><th data-sort="topic">Tema</th><th data-sort="views">Views</th><th data-sort="reach">Reach</th><th data-sort="engagement">Eng.</th><th data-sort="er_reach">ER reach</th><th>Insight</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="grid two" style="margin-top:18px">
+        <div class="card">
+          <h3>Stories migliori</h3>
+          <div id="storyChart" class="bar-chart"></div>
+          <p class="tiny" style="margin-top:12px">Le stories migliori generano views, ma non engagement: serve introdurre elementi interattivi.</p>
+        </div>
+        <div class="card callout">
+          <h3>Lettura qualitativa</h3>
+          <p>Il contenuto più efficace in termini qualitativi è l'immagine sul gancio per tetto regolabile: tra i top 3 ha l'engagement rate per reach più alto. Questo conferma che i contenuti prodotto/soluzione, quando sono concreti e contestualizzati, riescono a generare interesse anche senza grandi volumi.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="hashtag">
+      <div class="section-head"><div><h2>Hashtag e interazioni</h2><p>Gli hashtag più forti sono coerenti con il posizionamento: brand, sicurezza, sistemi anticaduta, fissaggi e tetti.</p></div></div>
+      <div class="grid two">
+        <div class="card"><h3>Classifica hashtag</h3><div id="hashChart" class="bar-chart"></div></div>
+        <div class="card">
+          <h3>Indicazioni operative</h3>
+          <div class="accordion">
+            <details open><summary>#gesagroup</summary><p>Funziona come hashtag proprietario e aggregatore. Va mantenuto, ma non basta per intercettare domanda specifica.</p></details>
+            <details><summary>#sicurezza / #sistemaanticaduta</summary><p>Sono gli hashtag più coerenti con il posizionamento tecnico. Da collegare a contenuti educativi e casi d'uso.</p></details>
+            <details><summary>#fissaggi / #tetti / #lineavita</summary><p>Raccontano bene le verticalità prodotto. Sono utili per trasformare il feed in un archivio tecnico consultabile.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="timing">
+      <div class="section-head"><div><h2>Timing e finestre di pubblicazione</h2><p>Le heatmap dell'export indicano segnali utili per programmare test editoriali più precisi.</p></div></div>
+      <div id="timingGrid" class="heat"></div>
+    </section>
+
+    <section id="community">
+      <div class="section-head"><div><h2>Community management</h2><p>La parte community resta limitata: poche risposte inviate e nessuna conversazione significativa da gestire. È il punto più importante da sviluppare.</p></div></div>
+      <div class="grid four" id="communityGrid"></div>
+      <div class="card callout" style="margin-top:18px">
+        <h3>Punto di attenzione</h3>
+        <p>Il profilo cresce in visibilità e follower, mentre il dialogo resta ancora contenuto. Per aumentare commenti e interazioni qualitative, le domande finali possono diventare più specifiche e operative: meno generiche, più legate a scelte reali di cantiere.</p>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="section-head"><div><h2>Roadmap operativa</h2><p>Le azioni consigliate per trasformare la crescita di maggio in un piano editoriale più efficace per giugno.</p></div></div>
+      <div class="card">
+        <div class="tabs" id="roadTabs"></div>
+        <div id="roadPanels"></div>
+      </div>
+    </section>
+
+    <section id="conclusioni">
+      <div class="section-head"><div><h2>Conclusioni</h2><p>Una sintesi finale per chiudere il report con una direzione chiara, senza appesantire la lettura dei dati.</p></div></div>
+      <div class="grid two">
+        <div class="card callout">
+          <h3>Lettura conclusiva</h3>
+          <p>Nel complesso, maggio è stato un mese positivo per Instagram GESA. Il profilo ha aumentato la propria visibilità, ha ampliato la community e ha confermato l'interesse verso contenuti tecnici, pratici e legati al mondo del cantiere.</p>
+          <p style="margin-top:12px">La crescita è stata sostenuta in modo importante dalla componente paid, ma i segnali organici indicano che il posizionamento del brand è coerente e può essere rafforzato ulteriormente.</p>
+          <p style="margin-top:12px">Instagram può quindi continuare a lavorare come canale di awareness e supporto al posizionamento: non solo per mostrare prodotti, ma per raccontare soluzioni concrete in modo più immediato, visivo e accessibile.</p>
+        </div>
+        <div class="card">
+          <h3>Direzione consigliata</h3>
+          <div class="metric-list">
+            <div class="metric-row"><div><strong>Rendere più riconoscibili i format</strong><span>Creare rubriche semplici e ricorrenti su sicurezza, fissaggi, linee vita e urgenze operative.</span></div><div class="number">01</div></div>
+            <div class="metric-row"><div><strong>Valorizzare l'utilità tecnica</strong><span>Trasformare i contenuti prodotto in mini-soluzioni: problema, applicazione, beneficio pratico.</span></div><div class="number">02</div></div>
+            <div class="metric-row"><div><strong>Attivare la community con gradualità</strong><span>Usare stories, poll e domande a scelta per facilitare micro-interazioni senza forzare la conversazione.</span></div><div class="number">03</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Report interattivo creato da export Instagram / Agorapulse. Le metriche abbreviate in K sono riportate come nell'export originale.</div>
+  </main>
+</div>
+<script>
+const DATA = {{DATA}};
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  if (typeof n === 'string') return n;
+  return n.toLocaleString('it-IT');
+}
+function pct(value, max) { return max ? Math.max(0, Math.min(100, (value / max) * 100)) : 0; }
+function toneClass(delta) {
+  if (!delta || delta === 'No data' || delta === '—') return 'neutral';
+  return String(delta).trim().startsWith('+') ? 'green' : 'amber';
+}
+function barChart(el, data, options={}) {
+  const max = options.max || Math.max(...data.map(d => d.value || 0), 1);
+  const fillClass = options.fillClass || '';
+  el.innerHTML = data.map(d => `
+    <div class="bar-row">
+      <div class="bar-label" title="${d.label}">${d.label}</div>
+      <div class="track"><div class="fill ${fillClass}" style="width:${pct(d.value, max)}%"></div></div>
+      <div class="bar-value">${d.display || fmt(d.value)}</div>
+    </div>`).join('');
+}
+function makeDelta(delta, explicitTone) { return `<span class="delta ${explicitTone || toneClass(delta)}">${delta}</span>`; }
+function tagClass(type) {
+  const t = String(type).toLowerCase();
+  if (t.includes('reel')) return 'reel';
+  if (t.includes('immagine') || t.includes('image')) return 'image';
+  if (t.includes('carosello') || t.includes('carousel')) return 'carousel';
+  return '';
+}
+
+// Mobile nav
+const sections = [...document.querySelectorAll('main section')];
+const mobileNav = document.getElementById('mobileNav');
+[...document.querySelectorAll('#sideNav a')].forEach(a => {
+  const opt = document.createElement('option'); opt.value = a.getAttribute('href'); opt.textContent = a.textContent.replace(/\s+\d+$/, ''); mobileNav.appendChild(opt);
+});
+mobileNav.addEventListener('change', e => location.hash = e.target.value);
+
+// Scrollspy
+const navLinks = [...document.querySelectorAll('#sideNav a')];
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id));
+      mobileNav.value = '#' + entry.target.id;
+    }
+  });
+}, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
+sections.forEach(s => observer.observe(s));
+
+// KPI cards
+const kpiGrid = document.getElementById('kpiGrid');
+const kpiInsight = document.getElementById('kpiInsight');
+function renderKpis() {
+  kpiGrid.innerHTML = DATA.kpis.map((k, idx) => `
+    <button class="kpi ${idx===0?'active':''}" data-id="${k.id}">
+      <span class="label">${k.label}</span>
+      <span><span class="value">${k.value}</span>${makeDelta(k.delta, k.tone)}</span>
+    </button>`).join('');
+  showKpi(DATA.kpis[0]);
+  kpiGrid.querySelectorAll('.kpi').forEach(btn => btn.addEventListener('click', () => {
+    kpiGrid.querySelectorAll('.kpi').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    showKpi(DATA.kpis.find(k => k.id === btn.dataset.id));
+  }));
+}
+function showKpi(k) {
+  kpiInsight.innerHTML = `<strong>${k.label} · ${k.value}</strong><p>${k.detail}</p><p style="margin-top:8px"><b>Azione:</b> ${k.action}</p>`;
+}
+renderKpis();
+
+// Split section
+const splitButtons = document.getElementById('splitButtons');
+const splitLabels = { views: 'Views', engagement: 'Engagement', reach: 'Reach media' };
+Object.keys(DATA.split).forEach((key, idx) => {
+  const b = document.createElement('button'); b.className = 'btn' + (idx===0?' active':''); b.textContent = splitLabels[key]; b.dataset.key = key; splitButtons.appendChild(b);
+});
+function renderSplit(key) {
+  splitButtons.querySelectorAll('.btn').forEach(b => b.classList.toggle('active', b.dataset.key === key));
+  const fillClass = key === 'views' ? 'orange' : key === 'engagement' ? '' : 'teal';
+  barChart(document.getElementById('splitChart'), DATA.split[key], { fillClass });
+}
+splitButtons.addEventListener('click', e => { if(e.target.dataset.key) renderSplit(e.target.dataset.key); });
+renderSplit('views');
+
+// Rate table
+const rateBody = document.querySelector('#rateTable tbody');
+rateBody.innerHTML = DATA.rates.map(r => `<tr><td><strong>${r.metric}</strong></td><td>${r.organic}</td><td>${r.paid}</td><td><strong>${r.total}</strong></td><td>${r.insight}</td></tr>`).join('');
+
+// Engagement breakdown
+barChart(document.getElementById('engagementChart'), DATA.engagement_breakdown.map(e => ({label:e.label, value:e.total, display:`${e.total} · ${e.variation}`})), { fillClass:'orange' });
+
+// Audience
+barChart(document.getElementById('growthChart'), DATA.audience_growth.map(x => ({ label:x.label, value:x.value })), { fillClass:'teal' });
+barChart(document.getElementById('geoChart'), DATA.geo.map(x => ({ label:x.city, value:x.followers })), { fillClass:'' });
+
+// Publishing mix
+const mixColors = ['pink','purple','orange','teal','gray'];
+const mixLegend = document.getElementById('mixLegend');
+mixLegend.innerHTML = DATA.publishing_mix.map((m, i) => `
+  <div class="legend-item"><span style="display:flex;gap:8px"><i class="dot ${mixColors[i]}"></i><span><strong>${m.format}</strong><br><small class="tiny">${m.share}% del totale · ${m.variation}</small></span></span><b>${m.posts}</b></div>
+`).join('');
+barChart(document.getElementById('formatEngagementChart'), DATA.publishing_mix.map(m => ({label:m.format, value:m.avg_engagement, display:`${m.avg_engagement} avg · ${m.posts} post`})), { fillClass:'teal', max:8 });
+
+// Content cards and table
+let currentFilter = 'Tutti';
+let sortState = { key:'views', dir:'desc' };
+const filters = ['Tutti', ...new Set(DATA.top_content.map(c => c.type))];
+const contentFilters = document.getElementById('contentFilters');
+contentFilters.innerHTML = filters.map((f,i) => `<button class="btn ${i===0?'active':''}" data-filter="${f}">${f}</button>`).join('');
+contentFilters.addEventListener('click', e => {
+  if(!e.target.dataset.filter) return;
+  currentFilter = e.target.dataset.filter;
+  contentFilters.querySelectorAll('.btn').forEach(b => b.classList.toggle('active', b.dataset.filter===currentFilter));
+  renderContent(); renderTable();
+});
+function getFilteredContent() { return DATA.top_content.filter(c => currentFilter === 'Tutti' || c.type === currentFilter); }
+function renderContent() {
+  const cards = getFilteredContent().map(c => `
+    <div class="card content-card">
+      <div class="content-top"><div><p class="content-title">${c.topic}</p><p class="tiny">${c.date} · ${c.time}</p></div><span class="tag ${tagClass(c.type)}">${c.type}</span></div>
+      <p class="content-desc">${c.description}</p>
+      <div class="mini-grid">
+        <div class="mini-stat"><small>Views</small><strong>${fmt(c.views)}</strong></div>
+        <div class="mini-stat"><small>Reach</small><strong>${fmt(c.reach)}</strong></div>
+        <div class="mini-stat"><small>Eng.</small><strong>${fmt(c.engagement)}</strong></div>
+      </div>
+      <div class="pill-row"><span class="pill purple">ER view ${c.er_view}%</span><span class="pill teal">ER reach ${c.er_reach}%</span><span class="pill pink">Saved ${c.saved}</span></div>
+      <p><strong>Insight:</strong> ${c.insight}</p>
+    </div>`).join('');
+  document.getElementById('contentCards').innerHTML = cards;
+}
+function renderTable() {
+  const rows = [...getFilteredContent()].sort((a,b) => {
+    let av = a[sortState.key], bv = b[sortState.key];
+    if (sortState.key === 'date') { av = a.date.split('/').reverse().join(''); bv = b.date.split('/').reverse().join(''); }
+    if (typeof av === 'string') return sortState.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return sortState.dir === 'asc' ? av - bv : bv - av;
+  });
+  document.querySelector('#contentTable tbody').innerHTML = rows.map(c => `<tr>
+    <td>${c.date}<br><span class="tiny">${c.time}</span></td><td><span class="tag ${tagClass(c.type)}">${c.type}</span></td><td><strong>${c.topic}</strong></td><td>${c.views}</td><td>${c.reach}</td><td>${c.engagement}</td><td><strong>${c.er_reach}%</strong></td><td>${c.insight}</td>
+  </tr>`).join('');
+}
+document.querySelectorAll('#contentTable th[data-sort]').forEach(th => th.addEventListener('click', () => {
+  const key = th.dataset.sort;
+  sortState.dir = sortState.key === key && sortState.dir === 'desc' ? 'asc' : 'desc';
+  sortState.key = key; renderTable();
+}));
+renderContent(); renderTable();
+barChart(document.getElementById('storyChart'), DATA.stories.map((s,i) => ({ label:`Story ${i+1} · ${s.date}`, value:s.views, display:`${s.views} views · reach ${s.reach}` })), { fillClass:'orange' });
+
+// Hashtags
+barChart(document.getElementById('hashChart'), DATA.hashtags.map(h => ({ label:h.tag, value:h.value, display:`${h.value} interazioni` })), { fillClass:'' });
+
+// Timing
+const timingGrid = document.getElementById('timingGrid');
+timingGrid.innerHTML = DATA.timing.map(t => `<div class="heat-card"><b>${t.label}</b><strong>${t.slot}</strong><span class="pill purple">${t.value}</span><p style="margin-top:10px">${t.note}</p></div>`).join('');
+
+// Community
+const communityGrid = document.getElementById('communityGrid');
+communityGrid.innerHTML = DATA.community.map(c => `<div class="card"><span class="tiny">${c.label}</span><div class="number" style="font-size:34px;margin:8px 0">${c.value}</div>${makeDelta(c.variation)}</div>`).join('');
+
+// Roadmap
+const roadTabs = document.getElementById('roadTabs');
+const roadPanels = document.getElementById('roadPanels');
+const roadLabels = { continuare:'Continuare', potenziare:'Potenziare', correggere:'Correggere', testare:'Testare' };
+Object.keys(DATA.roadmap).forEach((key, idx) => {
+  roadTabs.insertAdjacentHTML('beforeend', `<button class="btn ${idx===0?'active':''}" data-tab="${key}">${roadLabels[key]}</button>`);
+  roadPanels.insertAdjacentHTML('beforeend', `<div class="tab-panel ${idx===0?'active':''}" id="panel-${key}"><div class="road-list">${DATA.roadmap[key].map((x,i) => `<div class="road-item"><strong>${i+1}. ${roadLabels[key]}</strong><span>${x}</span></div>`).join('')}</div></div>`);
+});
+roadTabs.addEventListener('click', e => {
+  if(!e.target.dataset.tab) return;
+  const key = e.target.dataset.tab;
+  roadTabs.querySelectorAll('.btn').forEach(b => b.classList.toggle('active', b.dataset.tab===key));
+  roadPanels.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + key));
+});
+</script>
+</body>
+</html>

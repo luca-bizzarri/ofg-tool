@@ -1,0 +1,453 @@
+{
+  "meta": {
+    "brand": "GESA Group",
+    "channel": "Instagram",
+    "period": "1-31 maggio 2026",
+    "source": "Export Instagram / Agorapulse"
+  },
+  "kpis": [
+    {
+      "id": "followers",
+      "label": "Follower totali",
+      "value": "706",
+      "delta": "+29,5%",
+      "tone": "green",
+      "detail": "Crescita netta di +161 follower: 166 nuovi follower e 5 persi. Il mese mostra un'accelerazione importante della base audience.",
+      "action": "Consolidare la crescita con contenuti ricorrenti e riconoscibili: sicurezza, fissaggi, linee vita, cantiere."
+    },
+    {
+      "id": "engagement",
+      "label": "Engagement totale",
+      "value": "242",
+      "delta": "+62,4%",
+      "tone": "green",
+      "detail": "Il volume di interazioni cresce sensibilmente. La quota paid pesa molto, ma il dato organico resta utile per capire cosa genera interesse reale.",
+      "action": "Separare sempre lettura paid e organica: una misura scala, l'altra qualità del contenuto."
+    },
+    {
+      "id": "views",
+      "label": "Views totali",
+      "value": "75K",
+      "delta": "+137,3%",
+      "tone": "green",
+      "detail": "La crescita delle visualizzazioni è fortemente sostenuta dalla componente paid: 69K views paid contro 5,7K organiche.",
+      "action": "Usare l'adv per amplificare i contenuti più verticali, non solo quelli più generici."
+    },
+    {
+      "id": "organic_views",
+      "label": "Views organiche",
+      "value": "5,7K",
+      "delta": "+168,9%",
+      "tone": "green",
+      "detail": "Il canale cresce anche senza spinta media: le views organiche aumentano più del totale, segnale positivo per la base editoriale.",
+      "action": "Aumentare format educational e problem/solution, che hanno maggiore utilità percepita."
+    },
+    {
+      "id": "paid_views",
+      "label": "Views paid",
+      "value": "69K",
+      "delta": "+135%",
+      "tone": "green",
+      "detail": "La parte sponsorizzata genera la quasi totalità del volume di esposizione del mese.",
+      "action": "Ottimizzare il mix: contenuti awareness per reach, contenuti tecnici per salvataggi e qualità."
+    },
+    {
+      "id": "mentions",
+      "label": "Mention",
+      "value": "0",
+      "delta": "No data",
+      "tone": "neutral",
+      "detail": "Il brand non viene ancora citato spontaneamente nel periodo analizzato.",
+      "action": "Stimolare mention con contenuti da ricondividere, partnership, cantieri reali e tag espliciti."
+    },
+    {
+      "id": "published",
+      "label": "Post pubblicati",
+      "value": "14",
+      "delta": "-22,2%",
+      "tone": "amber",
+      "detail": "Meno contenuti rispetto al periodo precedente, ma con crescita delle views sui post pubblicati.",
+      "action": "Non serve aumentare solo la quantità: meglio bilanciare formati ad alta resa come Reel, immagini tecniche e caroselli."
+    },
+    {
+      "id": "post_views",
+      "label": "Views sui post",
+      "value": "3K",
+      "delta": "+56,6%",
+      "tone": "green",
+      "detail": "Le lifetime views dei contenuti pubblicati crescono, nonostante il numero di post sia diminuito.",
+      "action": "Capitalizzare i contenuti migliori trasformandoli in rubriche o varianti ADV."
+    },
+    {
+      "id": "post_engagement",
+      "label": "Engagement post",
+      "value": "46",
+      "delta": "-9,8%",
+      "tone": "amber",
+      "detail": "La performance dei singoli contenuti cresce in visibilità, ma l'engagement sui post cala leggermente.",
+      "action": "Aumentare contenuti salvabili, caroselli tecnici e CTA più dirette all'interazione."
+    }
+  ],
+  "split": {
+    "views": [
+      {
+        "label": "Organiche",
+        "value": 5700,
+        "display": "5,7K"
+      },
+      {
+        "label": "Paid",
+        "value": 69000,
+        "display": "69K"
+      }
+    ],
+    "engagement": [
+      {
+        "label": "Organico",
+        "value": 47,
+        "display": "47"
+      },
+      {
+        "label": "Paid",
+        "value": 187,
+        "display": "187"
+      },
+      {
+        "label": "DM non ripartiti",
+        "value": 8,
+        "display": "8"
+      }
+    ],
+    "reach": [
+      {
+        "label": "Reach organica media",
+        "value": 19.4,
+        "display": "19,4"
+      },
+      {
+        "label": "Reach paid media",
+        "value": 1400,
+        "display": "1,4K"
+      }
+    ]
+  },
+  "engagement_breakdown": [
+    {
+      "label": "Like",
+      "organic": 39,
+      "paid": 136,
+      "total": 175,
+      "variation": "+82,3%"
+    },
+    {
+      "label": "Commenti",
+      "organic": 0,
+      "paid": 0,
+      "total": 0,
+      "variation": "-100%"
+    },
+    {
+      "label": "Condivisioni",
+      "organic": 1,
+      "paid": 2,
+      "total": 3,
+      "variation": "-40%"
+    },
+    {
+      "label": "Salvataggi",
+      "organic": 7,
+      "paid": 49,
+      "total": 56,
+      "variation": "+700%"
+    },
+    {
+      "label": "Direct message",
+      "organic": null,
+      "paid": null,
+      "total": 8,
+      "variation": "-78,4%"
+    }
+  ],
+  "rates": [
+    {
+      "metric": "Engagement rate per view",
+      "organic": "0,8%",
+      "paid": "0,3%",
+      "total": "0,3%",
+      "variation": "-31,5%",
+      "insight": "L'organico ha un tasso superiore al paid: meno volume, ma maggiore qualità di interazione."
+    },
+    {
+      "metric": "Engagement rate per reach",
+      "organic": "7,8%",
+      "paid": "0,4%",
+      "total": "0,6%",
+      "variation": "-1,7%",
+      "insight": "La reach organica è piccola, ma molto più reattiva: utile per validare temi e format."
+    }
+  ],
+  "audience_growth": [
+    {
+      "label": "Nuovi follower",
+      "value": 166
+    },
+    {
+      "label": "Follower persi",
+      "value": 5
+    },
+    {
+      "label": "Crescita netta",
+      "value": 161
+    }
+  ],
+  "publishing_mix": [
+    {
+      "format": "Stories",
+      "posts": 5,
+      "variation": "-16,7%",
+      "avg_engagement": 0,
+      "share": 35.7
+    },
+    {
+      "format": "Caroselli",
+      "posts": 4,
+      "variation": "-42,9%",
+      "avg_engagement": 4,
+      "share": 28.6
+    },
+    {
+      "format": "Immagini",
+      "posts": 4,
+      "variation": "+300%",
+      "avg_engagement": 5,
+      "share": 28.6
+    },
+    {
+      "format": "Reel",
+      "posts": 1,
+      "variation": "-75%",
+      "avg_engagement": 7,
+      "share": 7.1
+    },
+    {
+      "format": "Video",
+      "posts": 0,
+      "variation": "—",
+      "avg_engagement": 0,
+      "share": 0.0
+    }
+  ],
+  "top_content": [
+    {
+      "date": "22/05/26",
+      "time": "12:30",
+      "type": "Reel",
+      "topic": "DPI Linea Vita Provvisoria",
+      "description": "La DPI Linea Vita Provvisoria Gesa è la soluzione ideale per chi lavora in quota e ha bisogno di protezione immediata, ovunque ne abbia bisogno.",
+      "views": 471,
+      "reach": 375,
+      "engagement": 7,
+      "likes": 5,
+      "comments": 0,
+      "saved": 2,
+      "er_view": 1.5,
+      "er_reach": 1.9,
+      "insight": "Miglior contenuto per views: tema sicurezza molto concreto e immediatamente comprensibile."
+    },
+    {
+      "date": "12/05/26",
+      "time": "12:30",
+      "type": "Carosello",
+      "topic": "Fissaggio e variazioni di temperatura",
+      "description": "Quando le temperature cambiano, anche il fissaggio deve essere all'altezza. Caldo e freddo possono incidere sulle prestazioni e rallentare il lavoro.",
+      "views": 382,
+      "reach": 235,
+      "engagement": 4,
+      "likes": 4,
+      "comments": 0,
+      "saved": 0,
+      "er_view": 1.0,
+      "er_reach": 1.7,
+      "insight": "Buona reach su un tema tecnico. Da rendere più salvabile con checklist o indicazioni pratiche."
+    },
+    {
+      "date": "07/05/26",
+      "time": "12:30",
+      "type": "Immagine",
+      "topic": "Gancio per tetto regolabile",
+      "description": "Quando la copertura cambia, il fissaggio deve sapersi adattare. Il gancio per tetto regolabile facilita il posizionamento su coperture con esigenze diverse.",
+      "views": 373,
+      "reach": 264,
+      "engagement": 8,
+      "likes": 6,
+      "comments": 0,
+      "saved": 2,
+      "er_view": 2.1,
+      "er_reach": 3.0,
+      "insight": "Miglior contenuto qualitativo tra i top 3: meno views del Reel, ma engagement rate più alto."
+    }
+  ],
+  "stories": [
+    {
+      "date": "12/05/26",
+      "time": "17:26",
+      "views": 43,
+      "reach": 43,
+      "engagement": 0
+    },
+    {
+      "date": "12/05/26",
+      "time": "17:26",
+      "views": 40,
+      "reach": 36,
+      "engagement": 0
+    },
+    {
+      "date": "12/05/26",
+      "time": "17:26",
+      "views": 36,
+      "reach": 33,
+      "engagement": 0
+    }
+  ],
+  "hashtags": [
+    {
+      "tag": "#gesagroup",
+      "value": 46
+    },
+    {
+      "tag": "#sicurezza",
+      "value": 33
+    },
+    {
+      "tag": "#sistemaanticaduta",
+      "value": 11
+    },
+    {
+      "tag": "#fissaggi",
+      "value": 10
+    },
+    {
+      "tag": "#tetti",
+      "value": 8
+    },
+    {
+      "tag": "#lineavita",
+      "value": 7
+    },
+    {
+      "tag": "#garanziasenzaincastri",
+      "value": 6
+    },
+    {
+      "tag": "#lineevita",
+      "value": 4
+    },
+    {
+      "tag": "#cantierichenonsifermano",
+      "value": 4
+    },
+    {
+      "tag": "#festadeilavoratori",
+      "value": 3
+    },
+    {
+      "tag": "#coperture",
+      "value": 3
+    },
+    {
+      "tag": "#noleggio",
+      "value": 3
+    }
+  ],
+  "geo": [
+    {
+      "city": "Milano, Lombardia",
+      "followers": 13
+    },
+    {
+      "city": "Roma, Lazio",
+      "followers": 12
+    },
+    {
+      "city": "Napoli, Campania",
+      "followers": 8
+    },
+    {
+      "city": "Palermo, Sicilia",
+      "followers": 6
+    },
+    {
+      "city": "Rovetta, Lombardia",
+      "followers": 5
+    },
+    {
+      "city": "Poirino, Piemonte",
+      "followers": 4
+    }
+  ],
+  "timing": [
+    {
+      "label": "Follower online",
+      "slot": "Martedì, circa 18:00",
+      "value": "Picco audience",
+      "note": "Il grafico attività utenti segnala il picco più alto nella fascia serale del martedì."
+    },
+    {
+      "label": "Engagement contenuti",
+      "slot": "Venerdì/Sabato, circa 9:00-10:00",
+      "value": "Picco pubblicazione",
+      "note": "La heatmap best day & time evidenzia una fascia forte tra venerdì e sabato in mattinata, con un segnale anche il mercoledì."
+    },
+    {
+      "label": "Ora ricorrente top content",
+      "slot": "12:30",
+      "value": "3 top post",
+      "note": "I tre contenuti migliori per views risultano pubblicati alle 12:30: fascia da mantenere come benchmark operativo."
+    }
+  ],
+  "community": [
+    {
+      "label": "Replies sent",
+      "value": "1",
+      "variation": "-50%"
+    },
+    {
+      "label": "Reviewed items",
+      "value": "0",
+      "variation": "No data"
+    },
+    {
+      "label": "Deleted/Hidden items",
+      "value": "0",
+      "variation": "No data"
+    },
+    {
+      "label": "Average response time",
+      "value": "—",
+      "variation": "No data"
+    }
+  ],
+  "roadmap": {
+    "continuare": [
+      "Presidiare sicurezza, fissaggi, coperture e linee vita come temi centrali.",
+      "Usare contenuti tecnici concreti: prodotti, applicazioni, vantaggi in cantiere.",
+      "Mantenere la fascia 12:30 come benchmark per i contenuti feed."
+    ],
+    "potenziare": [
+      "Aumentare i Reel: sono pochi, ma mostrano il miglior engagement medio tra i formati.",
+      "Trasformare i contenuti tecnici in caroselli salvabili: checklist, errori da evitare, scelta rapida.",
+      "Sfruttare i salvataggi in crescita: +700% indica che il contenuto utile funziona."
+    ],
+    "correggere": [
+      "Lavorare sui commenti: a maggio sono pari a zero, quindi le CTA devono essere più specifiche.",
+      "Rendere le stories più interattive con sondaggi, quiz e domande operative.",
+      "Stimolare mention e ricondivisioni con contenuti di cantiere, partner e casi reali."
+    ],
+    "testare": [
+      "Mini format: 'Scelta rapida' tra fissaggi, supporti, accessi, linee vita.",
+      "Rubrica: 'Errore da evitare in cantiere' con focus pratico.",
+      "ADV su contenuti verticali già validati organicamente: linee vita, ganci, sistemi anticaduta."
+    ]
+  }
+}

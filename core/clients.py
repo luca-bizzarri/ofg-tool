@@ -23,7 +23,14 @@ DEFAULT_PROFILE = {
     "channels": ["Instagram", "Facebook"],
     "rubriche": [],   # [{nome, descrizione, taglio, tipologia, esempi}]
     "telos": {},      # identita' di brand "sempre presente" (vedi TELOS_FIELDS)
+    "brand": {},      # identita' VISIVA per i report (colori + logo), vedi empty_brand()
 }
+
+
+def empty_brand() -> dict:
+    """Identita' visiva del cliente usata dai report HTML: colori e logo.
+    'logo' e' un data-URI base64 (immagine incorporata, report autoconsistente)."""
+    return {"primary": "", "secondary": "", "dark": "", "logo": ""}
 
 # --- TELOS del cliente -----------------------------------------------------
 # Identita' di brand esplicita, iniettata in OGNI generazione come contesto
@@ -84,6 +91,7 @@ def get_profile(client_id: str) -> dict:
         "channels": list(DEFAULT_PROFILE["channels"]),
         "rubriche": [],
         "telos": {},
+        "brand": {},
     }
     try:
         recs = rag.client.retrieve(
@@ -107,6 +115,7 @@ def save_profile(client_id: str, profile: dict) -> bool:
         "channels": profile.get("channels") or [],
         "rubriche": profile.get("rubriche") or [],
         "telos": profile.get("telos") or {},
+        "brand": profile.get("brand") or {},
     }
     point = PointStruct(
         id=_pid(cid),

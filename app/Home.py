@@ -2,9 +2,12 @@ import os
 import re
 import sys
 import time
+import json
 import base64
+import tempfile
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import PyPDF2
 import docx
@@ -17,6 +20,12 @@ except Exception:
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core import rag_engine as rag
 from core import clients, onboarding, ped, creative, slides
+from core.report import render as report_render
+from core.report import parse_instagram
+from core.report import parse_facebook
+from core.report import parse_linkedin
+from core.report import tone_engine
+from core.report import brand_extract
 
 _LOGO = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "Logo_no payoff_nero.png")
 
@@ -70,6 +79,59 @@ def extract_uploaded(uploaded_file) -> str:
         return ""
 
 
+def _to_temp(uploaded_file) -> str:
+    """Salva un file caricato in un file temporaneo e ne ritorna il path.
+    Serve ai parser report (PDF/Excel) che leggono da percorso, evitando
+    problemi di buffer riletti piu' volte."""
+    suffix = os.path.splitext(uploaded_file.name or "")[1] or ".bin"
+    tf = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    tf.write(uploaded_file.getvalue())
+    tf.close()
+    return tf.name
+
+
+def _edit_kpis(ch, key):
+    """Editor dei KPI di un canale: valore e variazione correggibili a mano.
+    Riscrive i valori (e ricalcola il colore della variazione) nel canale."""
+    kpis = ch.get("kpis", [])
+    if not kpis:
+        return
+    df = pd.DataFrame([{"KPI": k["label"], "Valore": k["value"], "Variazione": k["delta"]} for k in kpis])
+    ed = st.data_editor(df, key=key, use_container_width=True, hide_index=True, disabled=["KPI"])
+    for k, r in zip(kpis, ed.to_dict("records")):
+        k["value"] = str(r.get("Valore", k["value"]))
+        k["delta"] = str(r.get("Variazione", k["delta"]))
+        d = k["delta"].strip()
+        k["tone"] = "green" if d.startswith("+") else ("amber" if d.startswith("-") else "neutral")
+
+
+def _edit_fill(ch, field, cols, key, hint=""):
+    """Editor per COMPLETARE a mano un dato mancante (es. citta', demografia).
+    `cols` e' la lista di colonne; le righe vuote vengono scartate."""
+    if hint:
+        st.caption(hint)
+    rows = ch.get(field, []) or []
+    df = pd.DataFrame(rows, columns=cols) if rows else pd.DataFrame(columns=cols)
+    for c in cols:
+        if c not in df.columns:
+            df[c] = None
+    ed = st.data_editor(df[cols], key=key, num_rows="dynamic", use_container_width=True, hide_index=True)
+
+    def _coerce(v):
+        s = str(v).strip()
+        if re.fullmatch(r"-?\d+", s):
+            return int(s)
+        if re.fullmatch(r"-?\d+[.,]\d+", s):
+            return float(s.replace(",", "."))
+        return v
+
+    out = []
+    for r in ed.to_dict("records"):
+        if any(str(r.get(c, "")).strip() and str(r.get(c, "")).strip().lower() != "nan" for c in cols):
+            out.append({c: _coerce(r.get(c)) for c in cols})
+    ch[field] = out
+
+
 def render_telos_editor(client_id, profile):
     """Editor dell'IDENTITÀ DI BRAND (TELOS) del cliente. È il contesto
     'sempre presente' usato da TUTTI gli agenti (Ideazione, PED, ADV, Slide):
@@ -116,7 +178,8 @@ if sel == "➕ NUOVO CLIENTE...":
 else:
     client_id = sel
     if st.session_state.get("_active") != client_id:
-        for k in ["onb_profile", "ped_content", "ped_calendar", "idea_out", "adv_out"]:
+        for k in ["onb_profile", "ped_content", "ped_calendar", "idea_out", "adv_out", "report_html", "report_fname", "slides_md",
+                  "rep_channels", "rep_sig", "rep_period", "rep_detect"]:
             st.session_state.pop(k, None)
         st.session_state["_active"] = client_id
     prof = clients.get_profile(client_id)
@@ -141,7 +204,7 @@ languages = profile.get("languages", ["IT"])
 channels = profile.get("channels") or clients.CHANNELS[:2]
 
 st.markdown(f'<div class="main-header">{client_id}</div>', unsafe_allow_html=True)
-area = st.radio("Area", ["🚀 Onboarding", "🗂️ Scheda & Apprendimento", "💡 Ideazione", "📅 PED", "📣 ADV", "🖼️ Slide"], horizontal=True)
+area = st.radio("Area", ["🚀 Onboarding", "🗂️ Scheda & Apprendimento", "💡 Ideazione", "📅 PED", "📣 ADV", "🖼️ Slide", "📊 Report"], horizontal=True)
 st.markdown("---")
 
 
@@ -467,3 +530,227 @@ if area == "🖼️ Slide":
         _link = "https://luca-bizzarri.github.io/ofg-slide-builder/#md=" + _enc
         st.link_button("🚀 Apri il deck nello Slide Builder (slide già caricate)", _link, type="primary", use_container_width=True)
         st.caption("Il link apre lo Slide Builder con le slide GIÀ dentro — niente copia-incolla. Le foto si aggiungono lì (galleria → slide). Per deck molto lunghi, in alternativa, copia il markdown qui sopra.")
+
+
+# ==========================================================
+# 📊 REPORT — report social HTML interattivo brandizzato
+# ==========================================================
+if area == "📊 Report":
+    st.markdown('<div class="sub-header">Trasforma i dati social in un report HTML interattivo e brandizzato sul cliente</div>', unsafe_allow_html=True)
+
+    # --- Identità visiva del cliente (colori + logo): la usa il report ---
+    brand = clients.empty_brand()
+    brand.update(profile.get("brand") or {})
+    DEF = report_render.DEFAULT_BRAND
+
+    ex = st.session_state.get("brand_ex", {})
+
+    def _pre(field, fallback):
+        return ex.get(field) or brand.get(field) or fallback
+
+    with st.expander("🎨 Identità visiva del report (colori + logo)", expanded=not any(brand.values())):
+        su1, su2 = st.columns([3, 1])
+        site_url = su1.text_input("Sito del cliente (per estrarre colori, font e logo)", key="brand_url")
+        if su2.button("🎨 Estrai dal sito", use_container_width=True):
+            with st.spinner("Analisi del sito…"):
+                st.session_state["brand_ex"] = brand_extract.extract(site_url)
+            st.rerun()
+        if ex:
+            if ex.get("note"):
+                st.info(ex["note"])
+            if ex.get("fonts"):
+                st.caption("Font trovati sul sito: " + ", ".join(ex["fonts"]))
+            st.caption("Palette proposta dal sito: controllala e correggila qui sotto.")
+
+        bc1, bc2, bc3 = st.columns(3)
+        primary = bc1.color_picker("Colore primario", _pre("primary", DEF["primary"]))
+        secondary = bc2.color_picker("Colore secondario", _pre("secondary", DEF["secondary"]))
+        dark = bc3.color_picker("Scuro (sidebar e hero)", _pre("dark", DEF["dark"]))
+        logo_up = st.file_uploader("Logo del cliente (PNG/JPG, meglio la versione per fondo scuro)", type=["png", "jpg", "jpeg"], key="report_logo")
+        logo_uri = brand.get("logo") or ex.get("logo") or ""
+        if logo_up is not None:
+            logo_uri = report_render.bytes_to_data_uri(logo_up.getvalue(), logo_up.name)
+        st.caption("✅ Logo incorporato nel report." if logo_uri else "Nessun logo: caricalo o estrailo dal sito.")
+        if st.button("💾 Salva identità visiva nel cliente", key="save_brand"):
+            profile["brand"] = {"primary": primary, "secondary": secondary, "dark": dark, "logo": logo_uri}
+            clients.save_profile(client_id, profile)
+            st.session_state.pop("brand_ex", None)
+            st.success("Identità visiva salvata nella scheda cliente.")
+
+    brand_now = {"primary": primary, "secondary": secondary, "dark": dark, "logo": logo_uri}
+
+    st.markdown("---")
+    st.markdown("### 📥 Dati del report")
+    src = st.radio("Sorgente dati", ["Carica file del cliente (PDF + Excel)", "Dati di esempio (Instagram)", "Carica file JSON"], horizontal=True)
+
+    def _store(chans, period, sig, detect=None):
+        # Parsing tenuto in sessione: le correzioni manuali non si perdono ai rerun.
+        st.session_state["rep_channels"] = chans
+        st.session_state["rep_period"] = period
+        st.session_state["rep_sig"] = sig
+        st.session_state["rep_detect"] = detect or []
+
+    if src == "Carica file del cliente (PDF + Excel)":
+        ups = st.file_uploader(
+            "Carica i file che hai per questo cliente (non servono tutti): PDF Instagram/Facebook "
+            "e/o i 3 Excel LinkedIn (followers, content, visitors). Vengono create solo le tab dei canali presenti.",
+            type=["pdf", "xls", "xlsx"], accept_multiple_files=True, key="report_files")
+        if ups:
+            sig = "FILES:" + "|".join(sorted(u.name for u in ups))
+            if st.session_state.get("rep_sig") != sig:
+                chans, detect, def_period = [], [], ""
+                pdfs = [u for u in ups if u.name.lower().endswith(".pdf")]
+                xlss = [u for u in ups if u.name.lower().endswith((".xls", ".xlsx"))]
+                for p in pdfs:
+                    n = p.name.lower()
+                    is_fb = "facebook" in n or "_fb" in n or n.startswith("fb")
+                    try:
+                        if is_fb:
+                            ch_p = parse_facebook.parse(_to_temp(p))
+                            detect.append(f"📄 {p.name} → Facebook")
+                        else:
+                            ch_p = parse_instagram.parse(_to_temp(p))
+                            ch_p.update({"id": "instagram", "label": "Instagram", "type": "instagram"})
+                            detect.append(f"📄 {p.name} → Instagram")
+                        chans.append(ch_p)
+                        def_period = def_period or ch_p.get("meta", {}).get("period", "")
+                    except Exception as e:
+                        detect.append(f"❌ {p.name}: lettura non riuscita ({e})")
+                if xlss:
+                    f = c = v = None
+                    for u in xlss:
+                        n = u.name.lower()
+                        if "follower" in n:
+                            f = _to_temp(u)
+                        elif "content" in n:
+                            c = _to_temp(u)
+                        elif "visitor" in n:
+                            v = _to_temp(u)
+                        else:
+                            detect.append(f"⚠️ {u.name}: Excel non riconosciuto (atteso followers/content/visitors)")
+                    if any([f, c, v]):
+                        try:
+                            li = parse_linkedin.parse(followers=f, content=c, visitors=v)
+                            chans.append(li)
+                            def_period = def_period or li.get("meta", {}).get("period", "")
+                            got = [x for x, y in [("followers", f), ("content", c), ("visitors", v)] if y]
+                            detect.append("📊 Excel → LinkedIn (" + ", ".join(got) + ")")
+                        except Exception as e:
+                            detect.append(f"❌ Excel LinkedIn: lettura non riuscita ({e})")
+                _store(chans, def_period, sig, detect)
+        elif str(st.session_state.get("rep_sig", "")).startswith("FILES:"):
+            _store([], "", "")
+    elif src == "Dati di esempio (Instagram)":
+        if st.session_state.get("rep_sig") != "SAMPLE":
+            s = report_render.load_sample()
+            s.update({"id": "instagram", "label": "Instagram", "type": "instagram"})
+            _store([s], s.get("meta", {}).get("period", ""), "SAMPLE", ["Dati di esempio Instagram"])
+    else:
+        up = st.file_uploader("File JSON (report multi canale o singolo canale)", type=["json"], key="report_json")
+        if up is not None and st.session_state.get("rep_sig") != "JSON:" + up.name:
+            try:
+                j = json.loads(up.getvalue().decode("utf-8"))
+                if isinstance(j, dict) and j.get("channels"):
+                    _store(j["channels"], j.get("meta", {}).get("period", ""), "JSON:" + up.name)
+                else:
+                    j.update({"id": j.get("id", "instagram"), "label": j.get("label", "Instagram"), "type": j.get("type", "instagram")})
+                    _store([j], (j.get("meta") or {}).get("period", ""), "JSON:" + up.name)
+            except Exception as e:
+                st.error(f"JSON non valido: {e}")
+
+    channels = st.session_state.get("rep_channels", [])
+    for d in st.session_state.get("rep_detect", []):
+        st.write(d)
+    miss = list(dict.fromkeys(m for ch in channels for m in ch.get("missing_data", [])))
+    if miss:
+        st.warning("⚠️ Dati non nei file: " + "; ".join(miss) + ". Completali sotto in «Rivedi e correggi».")
+
+    if channels:
+        # --- STEP 5: revisione e correzione manuale (prima di generare) ---
+        with st.expander("🔧 Rivedi e correggi i dati", expanded=bool(miss)):
+            st.caption("Correggi i numeri se serve e completa i dati mancanti. Le modifiche restano salvate fino alla generazione.")
+            for ch in channels:
+                st.markdown(f"#### {ch.get('label','Canale')}")
+                _edit_kpis(ch, key=f"kpi_{ch.get('id')}")
+                if ch.get("type") == "instagram":
+                    cgeo, cdem = st.columns(2)
+                    with cgeo:
+                        _edit_fill(ch, "geo", ["city", "followers"], key=f"geo_{ch.get('id')}",
+                                   hint="📍 Città follower (nel PDF è solo un grafico): città + numero.")
+                    with cdem:
+                        _edit_fill(ch, "audience_profile", ["label", "value", "desc"], key=f"prof_{ch.get('id')}",
+                                   hint="👥 Profilo audience: es. label «Fascia età», value «35-44», desc breve nota.")
+                st.divider()
+
+        mc1, mc2 = st.columns(2)
+        m_brand = mc1.text_input("Nome cliente (in copertina)", client_id)
+        m_period = mc2.text_input("Periodo", st.session_state.get("rep_period", ""))
+        st.caption("Canali nel report: " + ", ".join(c.get("label", "?") for c in channels))
+
+        tc1, tc2 = st.columns(2)
+        gen_text = tc1.checkbox("✍️ Genera anche i testi morbidi con l'AI", value=True,
+                                help="Considerazioni, insight dei KPI e conclusioni nel tono consulenziale (regole di Marco). Generati per ogni canale.")
+        use_mem = tc2.checkbox("Usa la memoria del cliente per calibrare il tono", value=bool(client_id))
+
+        if st.button("✨ Genera report", type="primary", use_container_width=True):
+            try:
+                warns_all = []
+                for ch in channels:
+                    ch.setdefault("meta", {})
+                    ch["meta"]["period"] = m_period
+                    if gen_text:
+                        with st.spinner(f"L'AI sta scrivendo i testi di {ch.get('label','')}…"):
+                            tone_engine.generate(ch, client_id=client_id, use_rag=use_mem, soften=True)
+                        warns_all += [f"{ch.get('label','')}: {w}" for w in ch.pop("_tone_warnings", [])]
+                report = {"meta": {"brand": m_brand, "period": m_period}, "channels": channels}
+                if warns_all:
+                    st.warning("⚠️ Da verificare a mano: " + "; ".join(str(w) for w in warns_all))
+                html = report_render.render_report(report, brand_now)
+                st.session_state["report_html"] = html
+                st.session_state["report_fname"] = f"report_{rag._clean_id(client_id)}.html"
+                st.session_state["rep_brand"] = m_brand
+            except Exception as e:
+                st.error(f"Generazione non riuscita: {e}")
+
+    if st.session_state.get("report_html"):
+        html = st.session_state["report_html"]
+        st.success("✅ Report generato.")
+        st.download_button("⬇️ Scarica il report HTML", data=html.encode("utf-8"),
+                           file_name=st.session_state.get("report_fname", "report.html"),
+                           mime="text/html", type="primary", use_container_width=True)
+        st.caption("Apri il file e usa la Stampa del browser (Ctrl/Cmd + P) per ottenere il PDF.")
+
+        # --- Ritocco manuale dei testi AI (rigenera l'HTML senza richiamare l'AI) ---
+        gen_chs = st.session_state.get("rep_channels", [])
+        if any(c.get("narrative") for c in gen_chs):
+            with st.expander("✏️ Ritocca i testi e rigenera (senza richiamare l'AI)"):
+                for ch in gen_chs:
+                    N = ch.get("narrative") or {}
+                    if not N:
+                        continue
+                    cid = ch.get("id", "ch")
+                    cons = N.get("considerazioni", {}) or {}
+                    concl = N.get("conclusioni", {}) or {}
+                    st.markdown(f"**{ch.get('label','Canale')}**")
+                    g = st.text_area("Considerazione generale", "\n\n".join(cons.get("generale", []) or []), key=f"tx_g_{cid}", height=110)
+                    cons["generale"] = [t.strip() for t in g.split("\n\n") if t.strip()]
+                    cc1, cc2 = st.columns(2)
+                    cons["performance"] = cc1.text_area("Lettura performance", cons.get("performance", ""), key=f"tx_pf_{cid}", height=90)
+                    cons["forza"] = cc2.text_area("Punti di forza", cons.get("forza", ""), key=f"tx_fz_{cid}", height=90)
+                    cc3, cc4 = st.columns(2)
+                    cons["attenzione"] = cc3.text_area("Aree da osservare", cons.get("attenzione", ""), key=f"tx_at_{cid}", height=90)
+                    cons["sintesi"] = cc4.text_area("In sintesi", cons.get("sintesi", ""), key=f"tx_sn_{cid}", height=90)
+                    lc = st.text_area("Lettura conclusiva", "\n\n".join(concl.get("lettura", []) or []), key=f"tx_cl_{cid}", height=110)
+                    concl["lettura"] = [t.strip() for t in lc.split("\n\n") if t.strip()]
+                    N["considerazioni"] = cons
+                    N["conclusioni"] = concl
+                    ch["narrative"] = N
+                    st.divider()
+                if st.button("🔄 Aggiorna report con i testi modificati", type="primary"):
+                    rep = {"meta": {"brand": st.session_state.get("rep_brand", client_id), "period": st.session_state.get("rep_period", "")}, "channels": gen_chs}
+                    st.session_state["report_html"] = report_render.render_report(rep, brand_now)
+                    st.success("Report aggiornato con i testi modificati.")
+                    st.rerun()
+
+        with st.expander("👁️ Anteprima", expanded=True):
+            components.html(html, height=820, scrolling=True)

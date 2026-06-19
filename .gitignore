@@ -29,8 +29,15 @@ uploads/
 # === File di esempio / test generati in locale (non versionare) ===
 *_esempio.*
 _*test.py
+_test_*.py
 _qa_recheck.py
+_render_test_*.html
+
+# === Report: grezzi cliente e sorgente template con dati reali (NON pubblicare) ===
+Report raw/
+gesa_*_con_logo_brand.html
 
 # === File dati cliente / PED di riferimento (NON pubblicare) ===
 *.xlsx
+*.xls
 PED_*.xlsx
