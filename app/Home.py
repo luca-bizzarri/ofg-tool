@@ -132,6 +132,29 @@ def _edit_fill(ch, field, cols, key, hint=""):
     ch[field] = out
 
 
+def _edit_thumbs(ch, key):
+    """Uploader CODE-FREE delle foto dei top content: trascini l'immagine e finisce
+    nella thumbnail del contenuto (data-URI incorporato). Nessun HTML da toccare.
+    Le foto restano in sessione fino alla generazione del report."""
+    items = ch.get("top_content") or ch.get("top_post") or []
+    if not items:
+        return
+    st.caption("🖼️ Foto dei top content (opzionale): trascina un'immagine per ogni contenuto, entra nel report.")
+    cols = st.columns(min(len(items), 3))
+    for i, it in enumerate(items[:3]):
+        with cols[i]:
+            st.markdown(f"**{it.get('topic') or it.get('type') or f'Contenuto {i+1}'}**")
+            if it.get("thumb"):
+                st.image(it["thumb"], use_container_width=True)
+            up = st.file_uploader("Foto", type=["png", "jpg", "jpeg", "webp"],
+                                  key=f"{key}_{i}", label_visibility="collapsed")
+            if up is not None:
+                it["thumb"] = report_render.bytes_to_data_uri(up.getvalue(), up.name)
+            if it.get("thumb") and st.button("Rimuovi foto", key=f"{key}_rm_{i}"):
+                it.pop("thumb", None)
+                st.rerun()
+
+
 def render_telos_editor(client_id, profile):
     """Editor dell'IDENTITÀ DI BRAND (TELOS) del cliente. È il contesto
     'sempre presente' usato da TUTTI gli agenti (Ideazione, PED, ADV, Slide):
@@ -675,6 +698,7 @@ if area == "📊 Report":
                     with cdem:
                         _edit_fill(ch, "audience_profile", ["label", "value", "desc"], key=f"prof_{ch.get('id')}",
                                    hint="👥 Profilo audience: es. label «Fascia età», value «35-44», desc breve nota.")
+                _edit_thumbs(ch, key=f"thumb_{ch.get('id')}")
                 st.divider()
 
         mc1, mc2 = st.columns(2)
