@@ -166,7 +166,10 @@ except Exception:
     pass
 
 vectorstore = QdrantVectorStore(client=client, collection_name=collection_knowledge, embedding=embeddings)
-llm = ChatOpenAI(model=config.MODEL_NAME, api_key=config.API_KEY, base_url=config.API_BASE, temperature=0.2, max_tokens=4096)
+# max_tokens alto: i modelli "reasoning" (es. Nemotron) spendono molti token nel
+# ragionamento PRIMA di produrre l'output; con un tetto basso il JSON finale
+# veniva troncato e la scheda usciva vuota. 8192 lascia spazio a reasoning + JSON.
+llm = ChatOpenAI(model=config.MODEL_NAME, api_key=config.API_KEY, base_url=config.API_BASE, temperature=0.2, max_tokens=8192)
 
 
 def _clean_id(client_id: str) -> str:

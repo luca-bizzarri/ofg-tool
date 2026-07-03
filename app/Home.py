@@ -264,8 +264,17 @@ if area == "🚀 Onboarding":
                 p = onboarding.generate_profile(client_id, material, extra)
                 if lang_pre:
                     p["languages"] = lang_pre
+            if p.get("_empty"):
+                err = p.get("_error") or ""
+                st.error(
+                    "⚠️ Il modello non ha restituito una scheda utilizzabile (probabile "
+                    "sovraccarico/limite del modello gratuito). Riprova tra qualche secondo: "
+                    "spesso al secondo tentativo funziona."
+                    + (f"\n\nDettaglio tecnico: {err}" if err else "")
+                )
+            else:
                 st.session_state["onb_profile"] = p
-            st.success("✅ Scheda proposta! Controllala e salva qui sotto.")
+                st.success("✅ Scheda proposta! Controllala e salva qui sotto.")
 
     if "onb_profile" in st.session_state:
         p = st.session_state["onb_profile"]

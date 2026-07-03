@@ -75,15 +75,67 @@ def crawl_urls(start_urls, max_pages=12, max_chars_per=4000):
     return results
 
 
+def _repair_truncated_json(s: str) -> str:
+    """Ripara (best-effort) un JSON troncato dal limite di token: chiude la
+    stringa e le parentesi rimaste aperte, cosi' i campi gia' emessi sono
+    recuperabili anche se l'output e' stato tagliato a meta'."""
+    out = []
+    stack = []
+    in_str = False
+    escaped = False
+    for ch in s:
+        out.append(ch)
+        if in_str:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_str = False
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch in "{[":
+                stack.append(ch)
+            elif ch in "}]":
+                if stack:
+                    stack.pop()
+    text = "".join(out)
+    if in_str:                      # stringa lasciata aperta: la chiudo
+        text += '"'
+    # tolgo una eventuale coda penzolante: '"chiave":' senza valore (il due punti
+    # e' obbligatorio, cosi' NON tocco i valori-stringa gia' chiusi dalla riparazione)
+    text = re.sub(r'[\s,]*"[^"]*"\s*:\s*$', "", text)
+    # tolgo anche una chiave a meta' appena dopo una virgola/graffa (senza due punti)
+    text = re.sub(r'([{,])\s*"[^"]*"\s*$', r"\1", text)
+    text = re.sub(r"[\s,]+$", "", text)
+    for opener in reversed(stack):  # chiudo le parentesi ancora aperte
+        text += "}" if opener == "{" else "]"
+    return text
+
+
 def _parse_json(raw):
     clean = (raw or "").strip()
-    clean = re.sub(r"^```(?:json)?\s*", "", clean)
+    # via i blocchi di ragionamento dei modelli "reasoning" (chiusi o troncati)
+    clean = re.sub(r"<think>.*?</think>", "", clean, flags=re.DOTALL | re.IGNORECASE)
+    clean = re.sub(r"<think>.*$", "", clean, flags=re.DOTALL | re.IGNORECASE)
+    # via i fence markdown
+    clean = re.sub(r"^```(?:json)?\s*", "", clean.strip())
     clean = re.sub(r"\s*```$", "", clean)
-    m = re.search(r"\{.*\}", clean, re.DOTALL)
-    if m:
-        clean = m.group(0)
+    start = clean.find("{")
+    if start == -1:
+        return {}
+    clean = clean[start:]
+    # 1) tentativo diretto: dal primo '{' all'ultimo '}'
+    end = clean.rfind("}")
+    if end != -1:
+        try:
+            return json.loads(clean[:end + 1])
+        except Exception:
+            pass
+    # 2) tentativo su output troncato: riparo le parentesi/stringhe aperte
     try:
-        return json.loads(clean)
+        return json.loads(_repair_truncated_json(clean))
     except Exception:
         return {}
 
@@ -113,8 +165,27 @@ def generate_profile(client_id, material_text, note=""):
         f"REGOLE: NON inventare fatti non presenti. Se un'info manca scrivi '[DA COMPLETARE A MANO]' "
         f"solo per quella chiave. Niente testo fuori dal JSON."
     )
-    data = _parse_json(rag.llm.invoke(prompt).content)
+    # Il modello free e' instabile (reasoning che tronca, rate-limit 429): puo'
+    # restituire JSON vuoto/parziale. Ritento finche' non ottengo qualcosa di
+    # sostanzioso o esaurisco i tentativi. 'reinforce' rende il prompt piu' secco
+    # ai giri successivi per ridurre il reasoning e far uscire prima il JSON.
+    reinforce = "\n\nIMPORTANTE: rispondi SUBITO col JSON completo, senza ragionare a voce, senza testo prima o dopo."
+    data = {}
+    last_err = ""
+    for attempt in range(3):
+        try:
+            raw = rag.llm.invoke(prompt + (reinforce if attempt else "")).content
+            data = _parse_json(raw)
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {str(e)[:120]}"
+            data = {}
+        # riuscito se almeno un campo testuale e' pieno oppure ha proposto rubriche
+        if any(len(str(data.get(k) or "").strip()) >= 40 for k in TEXT_KEYS) or data.get("rubriche"):
+            break
     out = {k: str(data.get(k, "") or "").strip() for k in TEXT_KEYS}
+    # segnale per la UI: profilo di fatto vuoto (tutti i tentativi falliti)
+    out["_empty"] = not (any(out[k] for k in TEXT_KEYS) or data.get("rubriche"))
+    out["_error"] = last_err
     langs = data.get("languages") or ["IT"]
     out["languages"] = [l for l in langs if l in ("IT", "EN")] or ["IT"]
     rubriche = []
