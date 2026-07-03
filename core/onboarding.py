@@ -224,6 +224,23 @@ def save_profile(client_id, profile):
         card["languages"] = profile["languages"]
     if profile.get("rubriche"):
         card["rubriche"] = profile["rubriche"]
+    # Identita' di brand (TELOS): la compilo dai testi generati cosi' la scheda
+    # in evidenza si popola davvero (ed e' quella che usano TUTTI gli agenti).
+    # Riempio SOLO i campi ancora vuoti: non sovrascrivo eventuali modifiche a mano.
+    telos = clients.empty_telos()
+    telos.update(card.get("telos") or {})
+    _telos_map = {
+        "missione": "brand_positioning",
+        "tono_di_voce": "tono_di_voce",
+        "esempi_tov": "esempi_copy",
+        "icp": "icp_personas",
+        "dont": "regole_negative",
+    }
+    for tkey, pkey in _telos_map.items():
+        val = (profile.get(pkey) or "").strip()
+        if val and not (telos.get(tkey) or "").strip():
+            telos[tkey] = val
+    card["telos"] = telos
     clients.save_profile(client_id, card)
-    dettagli.append(f"Scheda cliente aggiornata: lingue {card['languages']}, {len(card.get('rubriche', []))} rubriche")
+    dettagli.append(f"Scheda cliente aggiornata: lingue {card['languages']}, {len(card.get('rubriche', []))} rubriche, identità di brand compilata")
     return salvate, dettagli

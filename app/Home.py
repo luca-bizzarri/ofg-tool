@@ -276,23 +276,41 @@ if area == "🚀 Onboarding":
                 st.session_state["onb_profile"] = p
                 st.success("✅ Scheda proposta! Controllala e salva qui sotto.")
 
+    # Conferma di salvataggio: sopravvive al rerun scatenato dal submit del form.
+    if st.session_state.get("onb_saved_msg"):
+        st.success(st.session_state.pop("onb_saved_msg"))
+        _det = st.session_state.pop("onb_saved_det", None)
+        if _det:
+            with st.expander("Dettaglio salvataggio"):
+                st.write("\n".join(_det))
+
     if "onb_profile" in st.session_state:
         p = st.session_state["onb_profile"]
         st.markdown("### 📋 Scheda proposta (modificabile)")
-        ed = {}
-        for k in onboarding.TEXT_KEYS:
-            ed[k] = st.text_area(onboarding.TEXT_LABELS[k], value=p.get(k, ""), height=120, key=f"onb_{k}")
-        ed["languages"] = st.multiselect("Lingue", ["IT", "EN"], default=p.get("languages", ["IT"]), key="onb_lang")
-        st.markdown("**Rubriche suggerite** (modificabili)")
-        rub_df = pd.DataFrame(p.get("rubriche", []) or [clients.new_rubrica()])
-        ed_rub = st.data_editor(rub_df, num_rows="dynamic", use_container_width=True, key="onb_rub")
-        if st.button("💾 Salva scheda cliente", type="primary"):
-            ed["rubriche"] = [r for r in ed_rub.to_dict(orient="records") if str(r.get("nome", "")).strip()]
-            n, det = onboarding.save_profile(client_id, ed)
-            st.success(f"✅ Salvati {n} blocchi in memoria + scheda aggiornata.")
-            with st.expander("Dettaglio"):
-                st.write("\n".join(det))
-            st.session_state.pop("onb_profile", None)
+        # Form: raggruppa i campi e fa partire il salvataggio in modo AFFIDABILE
+        # (un bottone normale accanto a un data_editor a volte "assorbe" il click).
+        with st.form("onb_save_form"):
+            ed = {}
+            for k in onboarding.TEXT_KEYS:
+                ed[k] = st.text_area(onboarding.TEXT_LABELS[k], value=p.get(k, ""), height=120, key=f"onb_{k}")
+            ed["languages"] = st.multiselect("Lingue", ["IT", "EN"], default=p.get("languages", ["IT"]), key="onb_lang")
+            st.markdown("**Rubriche suggerite** (modificabili)")
+            rub_df = pd.DataFrame(p.get("rubriche", []) or [clients.new_rubrica()])
+            ed_rub = st.data_editor(rub_df, num_rows="dynamic", use_container_width=True, key="onb_rub")
+            submitted = st.form_submit_button("💾 Salva scheda cliente", type="primary", use_container_width=True)
+        if submitted:
+            try:
+                ed["rubriche"] = [r for r in ed_rub.to_dict(orient="records") if str(r.get("nome", "")).strip()]
+                n, det = onboarding.save_profile(client_id, ed)
+                st.session_state["onb_saved_msg"] = (
+                    f"✅ Scheda salvata: {n} blocchi in memoria, identità di brand compilata "
+                    f"e {len(ed['rubriche'])} rubriche nella scheda cliente."
+                )
+                st.session_state["onb_saved_det"] = det
+                st.session_state.pop("onb_profile", None)
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Errore nel salvataggio: {type(e).__name__}: {e}")
 
 
 # ==========================================================
